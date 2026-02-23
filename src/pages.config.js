@@ -47,8 +47,14 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import KartRacer from './pages/KartRacer';
 
-export const pagesConfig = {
-	Pages: {}
+
+export const PAGES = {
+    "KartRacer": KartRacer,
 }
 
+export const pagesConfig = {
+    mainPage: "KartRacer",
+    Pages: PAGES,
+};
