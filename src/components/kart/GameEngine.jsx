@@ -475,11 +475,9 @@ function createMustang(color) {
     tlHousing.position.set(x, 0.6, 2.38);
     g.add(tlHousing);
     for (let b = 0; b < 3; b++) {
-      const barCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(x - 0.17 + b * 0.17, 0.51, 2.4),
-        new THREE.Vector3(x - 0.17 + b * 0.17, 0.69, 2.4),
-      ]);
-      g.add(new THREE.Mesh(new THREE.TubeGeometry(barCurve, 2, 0.025, 6, false), tailOn));
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.17, 0.05), tailOn);
+      bar.position.set(x - 0.17 + b * 0.17, 0.6, 2.4);
+      g.add(bar);
     }
   });
   // Center connecting strip
