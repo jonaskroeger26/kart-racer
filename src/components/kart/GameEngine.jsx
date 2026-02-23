@@ -259,24 +259,41 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     renderer.toneMappingExposure = 1.1;
     container.appendChild(renderer.domElement);
 
-    // Lighting
-    const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    // Lighting — moody night race atmosphere
+    const ambient = new THREE.AmbientLight(0x1a2a4a, 0.8);
     scene.add(ambient);
 
-    const sun = new THREE.DirectionalLight(0xfff4e0, 1.4);
-    sun.position.set(80, 150, 80);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(4096, 4096);
-    sun.shadow.camera.left = -300;
-    sun.shadow.camera.right = 300;
-    sun.shadow.camera.top = 300;
-    sun.shadow.camera.bottom = -300;
-    sun.shadow.bias = -0.0002;
-    scene.add(sun);
+    // Moon-like directional
+    const moon = new THREE.DirectionalLight(0x8aacff, 1.2);
+    moon.position.set(-60, 120, 40);
+    moon.castShadow = true;
+    moon.shadow.mapSize.set(4096, 4096);
+    moon.shadow.camera.left = -300;
+    moon.shadow.camera.right = 300;
+    moon.shadow.camera.top = 300;
+    moon.shadow.camera.bottom = -300;
+    moon.shadow.bias = -0.0003;
+    scene.add(moon);
 
-    // Hemisphere light for sky/ground
-    const hemi = new THREE.HemisphereLight(0x87ceeb, 0x3a7d44, 0.5);
+    // Warm secondary fill from opposite side
+    const fill2 = new THREE.DirectionalLight(0xff6030, 0.3);
+    fill2.position.set(100, 20, -60);
+    scene.add(fill2);
+
+    // Ground bounce
+    const hemi = new THREE.HemisphereLight(0x1a3060, 0x050f05, 0.6);
     scene.add(hemi);
+
+    // Neon track lights — point lights placed around track for atmosphere
+    const neonColors = [0x6633ff, 0xff3366, 0x33aaff, 0xff8800];
+    for (let i = 0; i < 8; i++) {
+      const t = i / 8;
+      const pos = new THREE.CatmullRomCurve3([]).constructor ? createTrackPath().getPointAt(t) : new THREE.Vector3(0, 5, 0);
+      const neon = new THREE.PointLight(neonColors[i % 4], 3, 40);
+      neon.position.copy(pos);
+      neon.position.y += 4;
+      scene.add(neon);
+    }
 
     // Track
     const trackCurve = createTrackPath();
