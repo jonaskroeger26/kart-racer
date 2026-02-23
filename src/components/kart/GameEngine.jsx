@@ -256,7 +256,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.6;
     container.appendChild(renderer.domElement);
 
     // Lighting — moody night race atmosphere
