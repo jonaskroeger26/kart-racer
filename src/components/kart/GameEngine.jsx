@@ -244,8 +244,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
     // Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x5ba3d4);
-    scene.fog = new THREE.FogExp2(0x7cc4e8, 0.003);
+    // Rich sunset/dusk sky
+    scene.background = new THREE.Color(0x0d1b3e);
+    scene.fog = new THREE.FogExp2(0x0a1628, 0.0025);
 
     const camera = new THREE.PerspectiveCamera(70, width / height, 0.1, 800);
 

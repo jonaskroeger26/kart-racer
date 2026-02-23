@@ -1,288 +1,354 @@
 import { motion, AnimatePresence } from 'framer-motion';
 
-const positionSuffix = (pos) => ['st','nd','rd'][pos - 1] || 'th';
-
-const formatTime = (seconds) => {
-  if (!seconds && seconds !== 0) return '0:00.00';
-  const mins = Math.floor(seconds / 60);
-  const secs = (seconds % 60).toFixed(2);
-  return `${mins}:${secs.padStart(5, '0')}`;
+const positionSuffix = (pos) => ['ST', 'ND', 'RD'][pos - 1] || 'TH';
+const formatTime = (s) => {
+  if (!s && s !== 0) return '0:00.00';
+  const m = Math.floor(s / 60);
+  const sec = (s % 60).toFixed(2);
+  return `${m}:${sec.padStart(5, '0')}`;
 };
 
-function SpeedMeter({ speed, boost }) {
-  const pct = Math.min(speed / 120, 1);
-  const color = boost ? '#f97316' : pct > 0.8 ? '#ef4444' : pct > 0.5 ? '#eab308' : '#22c55e';
+const posColors = ['#f59e0b', '#9ca3af', '#b45309', '#ffffff'];
 
+function PositionBadge({ position, totalRacers }) {
+  const col = posColors[Math.min(position - 1, 3)];
   return (
     <div className="relative flex flex-col items-center">
-      <svg width="90" height="90" viewBox="0 0 90 90">
-        {/* Track */}
-        <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" strokeDasharray="188 251" strokeDashoffset="-31" strokeLinecap="round" />
-        {/* Speed arc */}
-        <motion.circle
-          cx="45" cy="45" r="36"
-          fill="none"
-          stroke={color}
-          strokeWidth="8"
-          strokeDasharray={`${pct * 188} 251`}
-          strokeDashoffset="-31"
-          strokeLinecap="round"
-          style={{ filter: boost ? `drop-shadow(0 0 6px ${color})` : 'none' }}
-          animate={{ stroke: color }}
-          transition={{ duration: 0.2 }}
+      <svg width="80" height="80" viewBox="0 0 80 80" className="absolute inset-0">
+        <polygon points="40,4 76,26 76,54 40,76 4,54 4,26" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+      </svg>
+      <div className="relative z-10 flex flex-col items-center justify-center w-20 h-20">
+        <div className="flex items-start leading-none" style={{ color: col }}>
+          <span className="text-[38px] font-black tabular-nums" style={{ textShadow: `0 0 20px ${col}` }}>{position}</span>
+          <span className="text-[13px] font-black mt-1.5">{positionSuffix(position)}</span>
+        </div>
+        <div className="text-[9px] text-white/25 font-bold tracking-widest">of {totalRacers}</div>
+      </div>
+    </div>
+  );
+}
+
+function LapDisplay({ lap, totalLaps }) {
+  return (
+    <div className="flex flex-col items-center px-4 py-2 rounded-xl" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <span className="text-[9px] font-black tracking-[5px] text-white/25 mb-0.5">LAP</span>
+      <div className="flex items-baseline gap-0.5">
+        <motion.span
+          key={lap}
+          initial={{ y: -8, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="text-3xl font-black text-white tabular-nums"
+        >{lap}</motion.span>
+        <span className="text-lg font-black text-white/20">/{totalLaps}</span>
+      </div>
+    </div>
+  );
+}
+
+function Timer({ raceTime }) {
+  return (
+    <div className="flex flex-col items-end px-4 py-2 rounded-xl" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <span className="text-[9px] font-black tracking-[5px] text-white/25 mb-0.5">TIME</span>
+      <span className="text-xl font-mono font-black text-white tabular-nums" style={{ letterSpacing: 1 }}>
+        {formatTime(raceTime)}
+      </span>
+    </div>
+  );
+}
+
+function SpeedoArc({ speed, boost }) {
+  const MAX = 120;
+  const pct = Math.min(speed / MAX, 1);
+  const R = 48, CX = 56, CY = 56;
+  const startAngle = 140;
+  const endAngle = 400;
+  const range = endAngle - startAngle;
+  const arcLen = pct * range;
+
+  const polarToXY = (deg, r) => {
+    const rad = (deg - 90) * Math.PI / 180;
+    return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
+  };
+
+  const p1 = polarToXY(startAngle, R);
+  const p2 = polarToXY(startAngle + arcLen, R);
+  const largeArc = arcLen > 180 ? 1 : 0;
+  const fullP2 = polarToXY(endAngle, R);
+
+  const trackColor = boost ? '#f97316' : pct > 0.8 ? '#ef4444' : pct > 0.5 ? '#eab308' : '#22c55e';
+
+  return (
+    <div className="relative" style={{ width: 112, height: 112 }}>
+      <svg width="112" height="112" viewBox="0 0 112 112">
+        {/* Background arc */}
+        <path
+          d={`M${p1.x},${p1.y} A${R},${R} 0 1,1 ${fullP2.x},${fullP2.y}`}
+          fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" strokeLinecap="round"
         />
-        {/* Glow ring */}
-        {boost && (
-          <circle cx="45" cy="45" r="36" fill="none" stroke={color} strokeWidth="2"
-            strokeDasharray="188 251" strokeDashoffset="-31" strokeLinecap="round"
-            opacity="0.3"
+        {/* Speed arc */}
+        {pct > 0 && (
+          <path
+            d={`M${p1.x},${p1.y} A${R},${R} 0 ${largeArc},1 ${p2.x},${p2.y}`}
+            fill="none" stroke={trackColor} strokeWidth="8" strokeLinecap="round"
+            style={{ filter: `drop-shadow(0 0 8px ${trackColor})`, transition: 'stroke 0.3s' }}
           />
         )}
+        {/* Tick marks */}
+        {[...Array(11)].map((_, i) => {
+          const a = startAngle + (range / 10) * i;
+          const outer = polarToXY(a, R + 1);
+          const inner = polarToXY(a, R - 6);
+          return <line key={i} x1={outer.x} y1={outer.y} x2={inner.x} y2={inner.y} stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />;
+        })}
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center mt-2">
-        <span className={`text-2xl font-black tabular-nums leading-none ${boost ? 'text-orange-400' : 'text-white'}`}>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <motion.span
+          className="font-black tabular-nums leading-none"
+          style={{ fontSize: 28, color: boost ? '#f97316' : 'white', textShadow: boost ? '0 0 20px #f97316' : 'none' }}
+          animate={{ scale: boost ? [1, 1.05, 1] : 1 }}
+          transition={{ duration: 0.3, repeat: boost ? Infinity : 0 }}
+        >
           {speed}
-        </span>
-        <span className="text-[9px] text-white/40 font-medium">km/h</span>
+        </motion.span>
+        <span className="text-[9px] font-bold tracking-widest text-white/25 mt-0.5">KM/H</span>
+        {boost && (
+          <motion.div
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 0.25, repeat: Infinity }}
+            className="text-[8px] font-black tracking-widest text-orange-400 mt-0.5"
+          >⚡ BOOST</motion.div>
+        )}
       </div>
+    </div>
+  );
+}
+
+function ItemSlot({ hasItem }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <motion.div
+        animate={hasItem ? { scale: [1, 1.06, 1], boxShadow: ['0 0 0px #fbbf24', '0 0 20px #fbbf2480', '0 0 0px #fbbf24'] } : {}}
+        transition={{ duration: 0.9, repeat: Infinity }}
+        className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all"
+        style={{
+          background: hasItem ? 'rgba(251,191,36,0.12)' : 'rgba(0,0,0,0.4)',
+          border: hasItem ? '1.5px solid rgba(251,191,36,0.6)' : '1.5px solid rgba(255,255,255,0.06)',
+          backdropFilter: 'blur(20px)',
+        }}
+      >
+        <AnimatePresence>
+          {hasItem ? (
+            <motion.span
+              key="item"
+              initial={{ scale: 0, rotate: -90 }}
+              animate={{ scale: 1, rotate: 0 }}
+              exit={{ scale: 0, rotate: 90 }}
+              className="text-3xl"
+            >🍄</motion.span>
+          ) : (
+            <motion.span key="empty" className="text-[10px] font-black tracking-widest text-white/15">ITEM</motion.span>
+          )}
+        </AnimatePresence>
+      </motion.div>
+      <AnimatePresence>
+        {hasItem && (
+          <motion.span
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="text-[9px] font-black tracking-[4px] text-white/30"
+          >SPACE</motion.span>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 function Minimap({ playerT, aiPositions }) {
-  const size = 90;
-  const cx = size / 2, cy = size / 2, r = size / 2 - 10;
-
-  const getXY = (t) => {
-    const a = t * Math.PI * 2 - Math.PI / 2;
-    return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
+  const S = 100, cx = 50, cy = 50, r = 36;
+  const pt = (t) => {
+    const a = ((t + 1) % 1) * Math.PI * 2 - Math.PI / 2;
+    const wobble = Math.sin(a * 3) * 6;
+    return { x: cx + (r + wobble) * Math.cos(a), y: cy + (r + wobble * 0.5) * Math.sin(a) };
   };
+  const pp = pt(playerT || 0);
 
-  const pp = getXY(playerT);
+  // Build track path
+  const pts = [...Array(60)].map((_, i) => pt(i / 60));
+  const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
 
   return (
-    <div className="relative">
-      <svg width={size} height={size}>
-        {/* Track ring */}
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="6" />
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
-        {/* AI dots */}
+    <div className="rounded-2xl p-2" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`}>
+        {/* Track */}
+        <path d={d} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" strokeLinejoin="round" />
+        <path d={d} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="3" strokeLinejoin="round" />
+        {/* AI */}
         {aiPositions?.map((t, i) => {
-          const p = getXY((t + 1) % 1);
-          return <circle key={i} cx={p.x} cy={p.y} r="2.5" fill="rgba(255,255,255,0.35)" />;
+          const p = pt(t);
+          return <circle key={i} cx={p.x} cy={p.y} r="2.5" fill="rgba(255,255,255,0.3)" />;
         })}
-        {/* Player dot */}
-        <circle cx={pp.x} cy={pp.y} r="5" fill="#ef4444" stroke="white" strokeWidth="1.5" style={{ filter: 'drop-shadow(0 0 4px #ef4444)' }} />
-        {/* Start marker */}
-        <line x1={cx} y1={cy - r + 2} x2={cx} y2={cy - r + 8} stroke="white" strokeWidth="2" strokeLinecap="round" />
+        {/* Player */}
+        <circle cx={pp.x} cy={pp.y} r="5" fill="#ef4444" style={{ filter: 'drop-shadow(0 0 5px #ef4444)' }} />
+        <circle cx={pp.x} cy={pp.y} r="5" fill="none" stroke="white" strokeWidth="1.5" />
       </svg>
     </div>
   );
 }
 
-export default function RaceHUD({ gameState, kartHex }) {
+export default function RaceHUD({ gameState }) {
   if (!gameState) return null;
   const { speed, lap, totalLaps, position, totalRacers, hasItem, boost, countdown, raceTime, finished, finishTime, playerTrackT, aiPositions } = gameState;
 
   return (
-    <div className="absolute inset-0 pointer-events-none select-none font-sans">
-      {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 flex items-start justify-between p-3 md:p-4 gap-2">
-        {/* Position */}
-        <motion.div
-          initial={{ x: -30, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          className="bg-black/50 backdrop-blur-xl rounded-2xl px-4 py-2 border border-white/10 flex items-baseline gap-1"
-        >
-          <span className="text-4xl md:text-5xl font-black text-white leading-none tabular-nums">{position}</span>
-          <span className="text-lg font-black text-white/50">{positionSuffix(position)}</span>
-          <span className="ml-2 text-xs text-white/30 font-medium">/{totalRacers}</span>
+    <div className="absolute inset-0 pointer-events-none select-none" style={{ fontFamily: "'Inter', sans-serif" }}>
+
+      {/* ── TOP BAR ── */}
+      <div className="absolute top-0 left-0 right-0 flex items-start justify-between p-3 gap-3">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+          <PositionBadge position={position} totalRacers={totalRacers} />
         </motion.div>
 
-        {/* Lap counter */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-black/50 backdrop-blur-xl rounded-2xl px-5 py-2 border border-white/10 text-center"
-        >
-          <div className="text-[10px] text-white/40 uppercase tracking-widest font-medium">Lap</div>
-          <div className="text-2xl md:text-3xl font-black text-white leading-tight">
-            {lap}<span className="text-white/30 text-lg">/{totalLaps}</span>
-          </div>
+        <motion.div initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col items-center gap-2">
+          <LapDisplay lap={lap} totalLaps={totalLaps} />
         </motion.div>
 
-        {/* Timer */}
-        <motion.div
-          initial={{ x: 30, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          className="bg-black/50 backdrop-blur-xl rounded-2xl px-4 py-2 border border-white/10"
-        >
-          <div className="text-[10px] text-white/40 uppercase tracking-widest font-medium">Time</div>
-          <div className="text-lg md:text-xl font-mono font-bold text-white tabular-nums tracking-tight">
-            {formatTime(raceTime)}
-          </div>
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+          <Timer raceTime={raceTime} />
         </motion.div>
       </div>
 
-      {/* Countdown */}
+      {/* ── COUNTDOWN ── */}
       <AnimatePresence>
         {countdown !== null && countdown > 0 && (
           <motion.div
-            key={`countdown-${countdown}`}
-            initial={{ scale: 2.5, opacity: 0 }}
+            key={`cd-${countdown}`}
+            initial={{ scale: 3, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.3, opacity: 0 }}
+            exit={{ scale: 0.4, opacity: 0 }}
+            transition={{ duration: 0.3 }}
             className="absolute inset-0 flex items-center justify-center"
           >
-            <div className="text-[160px] font-black text-white drop-shadow-[0_0_60px_rgba(255,255,255,0.5)] leading-none">
-              {countdown}
-            </div>
+            <div
+              className="font-black leading-none tabular-nums"
+              style={{
+                fontSize: 180,
+                color: ['#ef4444', '#f59e0b', '#22c55e'][countdown - 1] || '#fff',
+                textShadow: `0 0 80px currentColor`,
+                WebkitTextStroke: '3px rgba(255,255,255,0.3)',
+              }}
+            >{countdown}</div>
           </motion.div>
         )}
         {countdown === 0 && (
           <motion.div
             key="go"
-            initial={{ scale: 2, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.2, opacity: 0 }}
-            transition={{ duration: 0.5 }}
+            initial={{ scale: 2.5, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.3, opacity: 0, y: -20 }}
             className="absolute inset-0 flex items-center justify-center"
           >
-            <div className="text-[100px] font-black text-yellow-400 drop-shadow-[0_0_40px_rgba(250,200,0,0.8)] leading-none">
+            <div style={{ fontSize: 120, fontWeight: 900, color: '#fbbf24', textShadow: '0 0 60px #fbbf24, 0 0 120px #f59e0b', WebkitTextStroke: '2px rgba(255,255,255,0.4)' }}>
               GO!
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Bottom HUD */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-3 md:p-4">
-        {/* Speed meter */}
-        <motion.div
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-black/50 backdrop-blur-xl rounded-2xl p-2 border border-white/10"
-        >
-          <SpeedMeter speed={parseInt(speed)} boost={boost} />
-          {boost && (
-            <motion.div
-              animate={{ opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 0.3, repeat: Infinity }}
-              className="text-center text-[10px] font-black text-orange-400 tracking-wider mt-0.5"
-            >
-              ⚡ BOOST
-            </motion.div>
-          )}
+      {/* ── BOTTOM BAR ── */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-3 gap-3">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <SpeedoArc speed={parseInt(speed) || 0} boost={boost} />
         </motion.div>
 
-        {/* Item slot */}
-        <motion.div
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="flex flex-col items-center gap-1.5"
-        >
-          <AnimatePresence>
-            {hasItem && (
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                exit={{ scale: 0 }}
-                className="text-xs text-white/50 font-bold tracking-wider"
-              >
-                SPACE
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <motion.div
-            animate={hasItem ? { scale: [1, 1.05, 1] } : {}}
-            transition={{ duration: 1, repeat: Infinity }}
-            className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center border-2 transition-all duration-300 ${
-              hasItem
-                ? 'bg-yellow-500/20 border-yellow-400/80 shadow-lg shadow-yellow-400/20'
-                : 'bg-black/30 border-white/10'
-            }`}
-          >
-            {hasItem ? (
-              <motion.span
-                animate={{ rotate: [0, 15, -15, 0] }}
-                transition={{ duration: 0.6, repeat: Infinity }}
-                className="text-3xl md:text-4xl"
-              >
-                🍄
-              </motion.span>
-            ) : (
-              <span className="text-white/15 text-xs font-bold">ITEM</span>
-            )}
-          </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mb-1">
+          <ItemSlot hasItem={hasItem} />
         </motion.div>
 
-        {/* Minimap */}
-        <motion.div
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-black/50 backdrop-blur-xl rounded-2xl p-2.5 border border-white/10"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <Minimap playerT={playerTrackT} aiPositions={aiPositions} />
         </motion.div>
       </div>
 
-      {/* Lap notification */}
+      {/* ── BOOST EDGE GLOW ── */}
       <AnimatePresence>
-        {gameState._lapFlash && (
+        {boost && (
           <motion.div
-            key={gameState._lapFlash}
-            initial={{ y: -30, opacity: 0, scale: 0.8 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 20, opacity: 0 }}
-            className="absolute top-1/3 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-xl rounded-2xl px-8 py-4 border border-white/20 text-center"
-          >
-            <div className="text-2xl font-black text-white">Lap {lap} / {totalLaps}</div>
-          </motion.div>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, repeat: Infinity }}
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse at center, transparent 60%, rgba(249,115,22,0.25) 100%)', boxShadow: 'inset 0 0 80px rgba(249,115,22,0.3)' }}
+          />
         )}
       </AnimatePresence>
 
-      {/* Finish screen */}
+      {/* ── FINISH SCREEN ── */}
       <AnimatePresence>
         {finished && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center pointer-events-auto"
+            className="absolute inset-0 flex items-center justify-center pointer-events-auto"
+            style={{ background: 'rgba(0,0,5,0.75)', backdropFilter: 'blur(12px)' }}
           >
-            <motion.div
-              initial={{ scale: 0.5, rotate: -5, opacity: 0 }}
-              animate={{ scale: 1, rotate: 0, opacity: 1 }}
-              transition={{ type: 'spring', damping: 14 }}
-              className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 md:p-12 text-center border border-white/10 shadow-2xl max-w-md mx-4 w-full"
-            >
+            {/* Confetti lines */}
+            {position === 1 && [...Array(20)].map((_, i) => (
               <motion.div
-                animate={{ rotate: [0, 10, -10, 5, 0] }}
-                transition={{ duration: 1, repeat: Infinity, repeatDelay: 2 }}
-                className="text-6xl md:text-8xl mb-4"
-              >
-                {position === 1 ? '🏆' : position <= 3 ? '🥈' : '🏁'}
-              </motion.div>
-              <div className="text-white/50 text-sm font-medium uppercase tracking-widest mb-1">Race Finished</div>
-              <div className="text-5xl md:text-6xl font-black text-white mb-1">
-                {position}<span className="text-2xl text-white/50">{positionSuffix(position)}</span>
-              </div>
-              <div className="text-white/40 text-sm mb-2">out of {totalRacers}</div>
-              <div className="text-xl font-mono font-bold text-white/70 mb-6">
-                ⏱ {formatTime(finishTime)}
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="flex-1 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors border border-white/10"
-                >
-                  Menu
-                </button>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-xl transition-colors shadow-lg shadow-red-500/20"
-                >
-                  Race Again
-                </button>
+                key={i}
+                className="absolute w-1 rounded-full"
+                style={{ height: 40 + Math.random() * 60, background: ['#f59e0b','#ef4444','#8b5cf6','#10b981','#3b82f6'][i % 5], left: `${Math.random() * 100}%`, top: '-10%' }}
+                animate={{ y: ['0vh', '110vh'], rotate: [0, 360 * (Math.random() > 0.5 ? 1 : -1)], opacity: [1, 0] }}
+                transition={{ duration: 2 + Math.random(), delay: Math.random() * 1.5, ease: 'easeIn' }}
+              />
+            ))}
+
+            <motion.div
+              initial={{ scale: 0.6, y: 40, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              transition={{ type: 'spring', damping: 16, delay: 0.1 }}
+              className="relative max-w-sm w-full mx-4 rounded-3xl overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, rgba(10,10,20,0.95), rgba(20,10,30,0.95))', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 100px rgba(0,0,0,0.8)' }}
+            >
+              {/* Top accent */}
+              <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #8b5cf6, #ef4444, #f59e0b)' }} />
+
+              <div className="p-8 text-center">
+                <motion.div
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="text-7xl mb-4"
+                >{position === 1 ? '🏆' : position <= 3 ? '🥈' : '🏁'}</motion.div>
+
+                <div className="text-[10px] font-black tracking-[6px] text-white/30 mb-2">RACE FINISHED</div>
+
+                <div className="font-black leading-none mb-1" style={{ fontSize: 64, color: posColors[Math.min(position - 1, 3)], textShadow: `0 0 40px ${posColors[Math.min(position - 1, 3)]}` }}>
+                  {position}<span style={{ fontSize: 28, opacity: 0.5 }}>{positionSuffix(position)}</span>
+                </div>
+                <div className="text-white/30 text-sm mb-4">out of {totalRacers} racers</div>
+
+                <div className="rounded-xl py-3 mb-6" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="text-[9px] tracking-[5px] text-white/25 font-black mb-1">FINAL TIME</div>
+                  <div className="font-mono font-black text-2xl text-white">{formatTime(finishTime)}</div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="flex-1 py-3.5 rounded-xl font-black text-sm tracking-widest text-white/60 hover:text-white transition-colors"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    MENU
+                  </button>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="flex-1 py-3.5 rounded-xl font-black text-sm tracking-widest text-white"
+                    style={{ background: 'linear-gradient(135deg, #dc2626, #ea580c)', boxShadow: '0 8px 24px rgba(220,38,38,0.4)' }}
+                  >
+                    RETRY
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
