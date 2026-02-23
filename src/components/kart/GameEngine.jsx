@@ -248,8 +248,6 @@ function createPorsche911(color) {
   });
 
   // ── SPLITTER ──
-  const splitterGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.1, 8);
-  splitterGeo.applyMatrix4(new THREE.Matrix4().makeScale(1, 0.3, 1));
   const splitter = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.05, 0.48), black);
   splitter.position.set(0, 0.14, -2.32);
   g.add(splitter);
