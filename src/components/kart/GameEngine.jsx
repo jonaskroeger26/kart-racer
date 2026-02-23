@@ -150,21 +150,14 @@ function buildWheel(r, w, nSpokes, rimColor, capColor) {
   rimFace.rotation.z = Math.PI / 2;
   g.add(rimFace);
 
-  // Thin curved spokes using TubeGeometry
+  // Spokes
   const n = nSpokes ?? 5;
   for (let i = 0; i < n; i++) {
     const angle = (i / n) * Math.PI * 2;
-    const spokeCurve = new THREE.LineCurve3(
-      new THREE.Vector3(w * 0.18, Math.cos(angle) * r * 0.15, Math.sin(angle) * r * 0.15),
-      new THREE.Vector3(w * 0.18, Math.cos(angle) * r * 0.62, Math.sin(angle) * r * 0.62)
-    );
-    const spokeGeo = new THREE.TubeGeometry(spokeCurve, 2, w * 0.055, 6, false);
+    const spokeGeo = new THREE.BoxGeometry(w * 0.5, r * 0.09, r * 0.55);
     const spoke = new THREE.Mesh(spokeGeo, rimMat);
+    spoke.rotation.set(0, 0, angle);
     g.add(spoke);
-    // Mirror side
-    const spokeMirror = spoke.clone();
-    spokeMirror.position.x = -w * 0.36;
-    g.add(spokeMirror);
   }
 
   // Center cap (slightly domed)
