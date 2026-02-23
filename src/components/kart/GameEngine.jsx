@@ -327,9 +327,9 @@ function createPorsche911(color) {
   tlStrip.position.set(0, 0.65, 2.26);
   g.add(tlStrip);
   [-0.72, 0.72].forEach(x => {
-    g.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.2, 0.06), tailOn), {
-      position: new THREE.Vector3(x, 0.56, 2.24)
-    }));
+    const cluster = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.2, 0.06), tailOn);
+    cluster.position.set(x, 0.56, 2.24);
+    g.add(cluster);
   });
 
   // ── EXHAUSTS ──
