@@ -1078,7 +1078,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         if (playerState.boost > 0) playerState.boost--;
         playerState.wheelRot += playerState.speed * 0.5;
 
-        const dt = playerState.speed * 0.00055;
+        const dt = playerState.speed * 0.0011;
         playerState.lastT = playerState.trackT;
         playerState.trackT = (playerState.trackT + dt + 1) % 1;
 
