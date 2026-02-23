@@ -699,14 +699,15 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const mat = isLight ? asphaltMat : asphaltLightMat;
 
       const makeQuad = (p0, p1, p2, p3, m, yOff = 0.05) => {
+        // p0=leftCurr, p1=rightCurr, p2=leftNext, p3=rightNext
         const geo = new THREE.BufferGeometry();
         const verts = new Float32Array([
           p0.x, p0.y + yOff, p0.z,
-          p1.x, p1.y + yOff, p1.z,
           p2.x, p2.y + yOff, p2.z,
           p1.x, p1.y + yOff, p1.z,
+          p1.x, p1.y + yOff, p1.z,
+          p2.x, p2.y + yOff, p2.z,
           p3.x, p3.y + yOff, p3.z,
-          p2.x, p2.y + yOff, p2.z,
         ]);
         geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
         geo.computeVertexNormals();
