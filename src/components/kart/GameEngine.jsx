@@ -268,29 +268,12 @@ function createPorsche911(color) {
   }
 
   // ── WHALE TAIL SPOILER ──
-  // Posts (curved tubes)
+  // Posts (simple cylinders)
   [-0.68, 0.68].forEach(x => {
-    const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(x, 0.72, 1.72),
-      new THREE.Vector3(x, 0.95, 1.82),
-      new THREE.Vector3(x, 1.18, 1.9),
-    ]);
-    const postGeo = new THREE.TubeGeometry(curve, 8, 0.045, 8, false);
-    g.add(new THREE.Mesh(postGeo, paint));
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.52, 8), paint);
+    post.position.set(x, 0.98, 1.85);
+    g.add(post);
   });
-  // Blade (curved in cross-section)
-  const bladeProfile = [];
-  for (let i = 0; i <= 12; i++) {
-    const t = i / 12;
-    bladeProfile.push(new THREE.Vector2(t * 0.65 - 0.05, Math.sin(t * Math.PI) * 0.06));
-  }
-  const bladeCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-0.88, 1.22, 1.9),
-    new THREE.Vector3(0, 1.24, 1.88),
-    new THREE.Vector3(0.88, 1.22, 1.9),
-  ]);
-  const bladeGeo = new THREE.TubeGeometry(bladeCurve, 12, 0.04, 8, false);
-  g.add(new THREE.Mesh(bladeGeo, paint));
   const wingSurface = new THREE.Mesh(new THREE.BoxGeometry(1.78, 0.055, 0.62), paint);
   wingSurface.position.set(0, 1.22, 1.88);
   wingSurface.rotation.x = 0.1;
