@@ -459,12 +459,9 @@ function createMustang(color) {
     g.add(housing);
     // Three glowing vertical bars
     for (let b = 0; b < 3; b++) {
-      const barCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(x - 0.18 + b * 0.18, y - 0.09, z + 0.01),
-        new THREE.Vector3(x - 0.18 + b * 0.18, y + 0.09, z + 0.01),
-      ]);
-      const barGeo = new THREE.TubeGeometry(barCurve, 2, 0.028, 6, false);
-      g.add(new THREE.Mesh(barGeo, lightOn));
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.19, 0.04), lightOn);
+      bar.position.set(x - 0.18 + b * 0.18, y, z + 0.01);
+      g.add(bar);
     }
     // Chrome surround
     const frame = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.27, 0.04), chrome);
