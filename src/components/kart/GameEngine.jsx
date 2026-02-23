@@ -1144,6 +1144,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         ai.mesh.position.copy(aiPos).add(aiRight.clone().multiplyScalar(aiLateral));
         ai.mesh.position.y += 0.18;
         ai.mesh.lookAt(ai.mesh.position.clone().add(aiDir));
+        ai.mesh.rotateY(Math.PI);
       });
 
       // Race position
