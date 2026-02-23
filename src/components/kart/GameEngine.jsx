@@ -583,13 +583,13 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       scene.add(ring);
     }
 
-    // Start/finish gate
+    // Start/finish gate — neon arch
     const gateDir = startTang;
     const gateRight = startRight;
 
-    const poleH = 10;
+    const poleH = 12;
     const poleGeo = new THREE.CylinderGeometry(0.3, 0.3, poleH, 8);
-    const poleMat = new THREE.MeshPhongMaterial({ color: 0xdddddd });
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x222233, metalness: 0.9, roughness: 0.1 });
     [-1, 1].forEach(side => {
       const pole = new THREE.Mesh(poleGeo, poleMat);
       const pPos = startPos.clone().add(gateRight.clone().multiplyScalar(side * (TRACK_WIDTH / 2 + 1)));
