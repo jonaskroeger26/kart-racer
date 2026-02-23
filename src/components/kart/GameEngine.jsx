@@ -452,63 +452,83 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       });
     }
 
-    // Environment - varied scenery
-    // Trees
-    const treeTypes = [
-      { trunk: 0x5c3317, leaf: 0x2d6a2d, lSize: 3.5, lH: 5, lSeg: 5 },
-      { trunk: 0x6b4226, leaf: 0x3a8c3f, lSize: 2.5, lH: 4, lSeg: 4 },
-      { trunk: 0x8B4513, leaf: 0x4aa04a, lSize: 4, lH: 6, lSeg: 6 },
-    ];
-    // Place trees outside track bounds
+    // Environment — futuristic night race scenery
     const rng = (n) => Math.random() * n;
-    for (let i = 0; i < 200; i++) {
-      const t = rng(1);
-      const basePos = trackCurve.getPointAt(t);
-      const sideDir = Math.random() > 0.5 ? 1 : -1;
-      const dist = 20 + rng(80);
-      const pos = basePos.clone();
-      const tang = trackCurve.getTangentAt(t);
-      const right = new THREE.Vector3().crossVectors(tang, new THREE.Vector3(0, 1, 0)).normalize();
-      pos.add(right.multiplyScalar(sideDir * dist));
 
-      const tt = treeTypes[Math.floor(rng(3))];
-      const scale = 0.6 + rng(0.8);
+    // Glowing pylons / light pillars along track sides
+    for (let i = 0; i < trackPoints.length; i += 14) {
+      const curr = trackPoints[i];
+      const next = trackPoints[(i + 1) % trackPoints.length];
+      const dir = new THREE.Vector3().subVectors(next, curr).normalize();
+      const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
 
-      const trunkGeo = new THREE.CylinderGeometry(0.3 * scale, 0.5 * scale, 3 * scale, 6);
-      const trunkMat = new THREE.MeshPhongMaterial({ color: tt.trunk });
-      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-      trunk.position.set(pos.x, pos.y + 1.5 * scale, pos.z);
-      trunk.castShadow = true;
-      scene.add(trunk);
+      const pylonColors = [0x6633ff, 0xff3366, 0x00ccff, 0xff6600];
+      const col = pylonColors[Math.floor(i / 14) % pylonColors.length];
 
-      const leafGeo = new THREE.ConeGeometry(tt.lSize * scale, tt.lH * scale, tt.lSeg);
-      const leafMat = new THREE.MeshPhongMaterial({ color: tt.leaf });
-      const leaf = new THREE.Mesh(leafGeo, leafMat);
-      leaf.position.set(pos.x, pos.y + (3 + tt.lH / 2) * scale, pos.z);
-      leaf.castShadow = true;
-      scene.add(leaf);
+      [-1, 1].forEach(side => {
+        const pos = curr.clone().add(right.clone().multiplyScalar(side * (TRACK_WIDTH / 2 + 4)));
+        // Pylon body
+        const pylonGeo = new THREE.CylinderGeometry(0.15, 0.2, 5, 6);
+        const pylonMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.8, roughness: 0.2 });
+        const pylon = new THREE.Mesh(pylonGeo, pylonMat);
+        pylon.position.set(pos.x, pos.y + 2.5, pos.z);
+        pylon.castShadow = true;
+        scene.add(pylon);
+        // Glowing top
+        const topGeo = new THREE.SphereGeometry(0.3, 8, 8);
+        const topMat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 2, roughness: 0 });
+        const top = new THREE.Mesh(topGeo, topMat);
+        top.position.set(pos.x, pos.y + 5.3, pos.z);
+        scene.add(top);
+      });
     }
 
-    // Mountains in background
-    for (let i = 0; i < 15; i++) {
-      const angle = (i / 15) * Math.PI * 2;
-      const dist = 350 + Math.random() * 150;
+    // Background futuristic structures / monoliths
+    for (let i = 0; i < 30; i++) {
+      const angle = (i / 30) * Math.PI * 2;
+      const dist = 120 + Math.random() * 200;
       const x = Math.cos(angle) * dist;
       const z = Math.sin(angle) * dist;
-      const h = 50 + Math.random() * 80;
+      const h = 20 + Math.random() * 80;
+      const w = 4 + Math.random() * 10;
 
-      const mGeo = new THREE.ConeGeometry(40 + Math.random() * 40, h, 5);
-      const mMat = new THREE.MeshPhongMaterial({ color: 0x8899aa });
+      const bGeo = new THREE.BoxGeometry(w, h, w * 0.6);
+      const bMat = new THREE.MeshStandardMaterial({
+        color: 0x0a0a1a,
+        emissive: [0x001133, 0x110022, 0x002211][Math.floor(Math.random() * 3)],
+        emissiveIntensity: 0.4,
+        metalness: 0.8,
+        roughness: 0.2,
+      });
+      const b = new THREE.Mesh(bGeo, bMat);
+      b.position.set(x, h / 2 - 1, z);
+      scene.add(b);
+
+      // Window lights on buildings
+      if (Math.random() > 0.3) {
+        const winCol = [0x4466ff, 0xff4466, 0x44ffcc][Math.floor(Math.random() * 3)];
+        const winGeo = new THREE.BoxGeometry(w * 0.9, 0.4, 0.1);
+        const winMat = new THREE.MeshStandardMaterial({ color: winCol, emissive: winCol, emissiveIntensity: 1.5 });
+        for (let wrow = 1; wrow <= 5; wrow++) {
+          const win = new THREE.Mesh(winGeo, winMat);
+          win.position.set(x, wrow * (h / 6), z + w * 0.31);
+          scene.add(win);
+        }
+      }
+    }
+
+    // Distant mountain silhouettes
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2;
+      const dist = 380 + Math.random() * 80;
+      const x = Math.cos(angle) * dist;
+      const z = Math.sin(angle) * dist;
+      const h = 60 + Math.random() * 100;
+      const mGeo = new THREE.ConeGeometry(35 + Math.random() * 30, h, 5);
+      const mMat = new THREE.MeshStandardMaterial({ color: 0x050a14, roughness: 1, metalness: 0 });
       const m = new THREE.Mesh(mGeo, mMat);
-      m.position.set(x, h / 2 - 2, z);
+      m.position.set(x, h / 2 - 5, z);
       scene.add(m);
-
-      // Snow cap
-      const snowGeo = new THREE.ConeGeometry(12, h * 0.25, 5);
-      const snowMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
-      const snow = new THREE.Mesh(snowGeo, snowMat);
-      snow.position.set(x, h - h * 0.1, z);
-      scene.add(snow);
     }
 
     // Grandstands near start/finish
