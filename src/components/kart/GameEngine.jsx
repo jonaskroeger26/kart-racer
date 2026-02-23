@@ -598,14 +598,21 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       scene.add(pole);
     });
 
-    const beamGeo = new THREE.BoxGeometry(TRACK_WIDTH + 4, 0.6, 0.6);
-    const beamMat = new THREE.MeshPhongMaterial({ color: 0x111111 });
+    const beamGeo = new THREE.BoxGeometry(TRACK_WIDTH + 4, 0.5, 0.5);
+    const beamMat = new THREE.MeshStandardMaterial({ color: 0x222233, emissive: 0x0033ff, emissiveIntensity: 0.8, metalness: 0.9, roughness: 0.1 });
     const beam = new THREE.Mesh(beamGeo, beamMat);
     const beamPos = startPos.clone();
     beamPos.y += poleH;
     beam.position.copy(beamPos);
     beam.lookAt(beamPos.x + gateDir.x, beamPos.y, beamPos.z + gateDir.z);
     scene.add(beam);
+
+    // Glowing FINISH sign on beam
+    const signGeo = new THREE.BoxGeometry(6, 1.2, 0.3);
+    const signMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1 });
+    const sign = new THREE.Mesh(signGeo, signMat);
+    sign.position.copy(beamPos);
+    sign.lookAt(beamPos.x + gateDir.x, beamPos.y, beamPos.z + gateDir.z);
 
     // Checkered finish line
     for (let i = 0; i < 12; i++) {
