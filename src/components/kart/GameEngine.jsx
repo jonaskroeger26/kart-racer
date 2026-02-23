@@ -413,24 +413,42 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       }
     }
 
-    // Barriers
-    const barrierColors = [0xdd2200, 0xffffff];
-    const barrierGeo = new THREE.BoxGeometry(0.5, 2, 2.5);
+    // Barriers — glowing neon barriers
+    const barrierGeo = new THREE.BoxGeometry(0.45, 1.8, 2.5);
     for (let i = 0; i < trackPoints.length; i += 6) {
       const curr = trackPoints[i];
       const next = trackPoints[(i + 1) % trackPoints.length];
       const dir = new THREE.Vector3().subVectors(next, curr).normalize();
       const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
-      const cIdx = Math.floor(i / 6) % 2;
+      const alt = Math.floor(i / 6) % 2;
 
-      [-1, 1].forEach(side => {
+      // Alternate blue/red neon barriers
+      const neonLeft = alt === 0 ? 0x0044ff : 0xff0044;
+      const neonRight = alt === 0 ? 0xff0044 : 0x0044ff;
+
+      [-1, 1].forEach((side, si) => {
+        const neonColor = side === -1 ? neonLeft : neonRight;
         const pos = curr.clone().add(right.clone().multiplyScalar(side * (TRACK_WIDTH / 2 + 1.5)));
-        const bMat = new THREE.MeshPhongMaterial({ color: barrierColors[cIdx] });
+        const bMat = new THREE.MeshStandardMaterial({
+          color: 0x111122,
+          emissive: neonColor,
+          emissiveIntensity: 0.6,
+          roughness: 0.3,
+          metalness: 0.6,
+        });
         const b = new THREE.Mesh(barrierGeo, bMat);
-        b.position.set(pos.x, pos.y + 1, pos.z);
-        b.lookAt(next.x, pos.y + 1, next.z);
+        b.position.set(pos.x, pos.y + 0.9, pos.z);
+        b.lookAt(next.x, pos.y + 0.9, next.z);
         b.castShadow = true;
         scene.add(b);
+
+        // Neon strip on top
+        const stripGeo = new THREE.BoxGeometry(0.1, 0.15, 2.4);
+        const stripMat = new THREE.MeshStandardMaterial({ color: neonColor, emissive: neonColor, emissiveIntensity: 2, roughness: 0, metalness: 0.5 });
+        const strip = new THREE.Mesh(stripGeo, stripMat);
+        strip.position.set(pos.x, pos.y + 1.85, pos.z);
+        strip.lookAt(next.x, pos.y + 1.85, next.z);
+        scene.add(strip);
       });
     }
 
