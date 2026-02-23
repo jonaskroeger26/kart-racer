@@ -531,7 +531,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       scene.add(m);
     }
 
-    // Grandstands near start/finish
+    // Grandstand crowd (colored seats) near start/finish
     const startPos = trackCurve.getPointAt(0);
     const startTang = trackCurve.getTangentAt(0);
     const startRight = new THREE.Vector3().crossVectors(startTang, new THREE.Vector3(0, 1, 0)).normalize();
@@ -568,24 +568,19 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       itemBoxes.push(box);
     }
 
-    // Clouds
-    for (let i = 0; i < 40; i++) {
-      const cloud = new THREE.Group();
-      const numPuffs = 3 + Math.floor(Math.random() * 4);
-      for (let j = 0; j < numPuffs; j++) {
-        const pGeo = new THREE.SphereGeometry(4 + Math.random() * 4, 7, 7);
-        const pMat = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
-        const p = new THREE.Mesh(pGeo, pMat);
-        p.position.set(j * 5 - numPuffs * 2.5, Math.random() * 3, Math.random() * 4 - 2);
-        p.scale.y = 0.55 + Math.random() * 0.2;
-        cloud.add(p);
-      }
-      cloud.position.set(
-        (Math.random() - 0.5) * 600,
-        60 + Math.random() * 50,
-        (Math.random() - 0.5) * 600
+    // Floating neon rings in sky (futuristic decoration)
+    for (let i = 0; i < 6; i++) {
+      const ringGeo = new THREE.TorusGeometry(8 + Math.random() * 6, 0.4, 6, 24);
+      const ringCol = [0x6633ff, 0xff3366, 0x00ccff][i % 3];
+      const ringMat = new THREE.MeshStandardMaterial({ color: ringCol, emissive: ringCol, emissiveIntensity: 1.5, roughness: 0 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.position.set(
+        (Math.random() - 0.5) * 200,
+        40 + Math.random() * 60,
+        (Math.random() - 0.5) * 200
       );
-      scene.add(cloud);
+      ring.rotation.set(Math.random(), Math.random(), Math.random());
+      scene.add(ring);
     }
 
     // Start/finish gate
