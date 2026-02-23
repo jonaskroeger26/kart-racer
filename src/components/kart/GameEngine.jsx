@@ -104,7 +104,7 @@ function buildCarBody(paint, sections) {
   });
 
   // Build geometry from rings
-  rings.forEach((ring, ri) => {
+  rings.forEach((ring) => {
     ring.forEach(([x, y, z]) => verts.push(x, y, z));
   });
 
