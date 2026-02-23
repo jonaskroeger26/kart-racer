@@ -392,15 +392,10 @@ function createMustang(color) {
   g.add(buildCarBody(paint, roofSections));
 
   // ── HOOD SCOOP ──
-  const scoopCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 0.76, -1.6),
-    new THREE.Vector3(0, 0.84, -1.35),
-    new THREE.Vector3(0, 0.82, -1.1),
-  ]);
-  const scoopGeo = new THREE.TubeGeometry(scoopCurve, 6, 0.14, 10, false);
-  // Squash to oval
-  scoopGeo.applyMatrix4(new THREE.Matrix4().makeScale(2.2, 0.55, 1));
-  g.add(new THREE.Mesh(scoopGeo, black));
+  const scoop = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.32, 0.12, 8, 1, false, 0, Math.PI), black);
+  scoop.rotation.z = Math.PI;
+  scoop.position.set(0, 0.78, -1.3);
+  g.add(scoop);
 
   // ── WINDSHIELD ──
   const wsShape = new THREE.Shape([
