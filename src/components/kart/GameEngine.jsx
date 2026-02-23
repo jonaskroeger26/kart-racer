@@ -1113,6 +1113,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       playerCar.position.y += 0.18;
       const lookTarget = playerCar.position.clone().add(playerDir);
       playerCar.lookAt(lookTarget);
+      playerCar.rotateY(Math.PI);
 
       // Boost flame
       if (playerState.boost > 0 && frame % 2 === 0) {
