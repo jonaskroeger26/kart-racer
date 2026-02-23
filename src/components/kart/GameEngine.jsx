@@ -282,9 +282,38 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const trackCurve = createTrackPath();
     const trackPoints = trackCurve.getPoints(800);
 
+    // Sky gradient dome
+    const skyGeo = new THREE.SphereGeometry(500, 16, 8);
+    const skyMat = new THREE.MeshBasicMaterial({
+      color: 0x0d1b3e,
+      side: THREE.BackSide,
+    });
+    scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+    // Horizon glow
+    const horizonGeo = new THREE.TorusGeometry(300, 40, 4, 32);
+    const horizonMat = new THREE.MeshBasicMaterial({ color: 0x1a3a6e, transparent: true, opacity: 0.4 });
+    const horizon = new THREE.Mesh(horizonGeo, horizonMat);
+    horizon.rotation.x = Math.PI / 2;
+    horizon.position.y = -10;
+    scene.add(horizon);
+
+    // Stars
+    const starGeo = new THREE.BufferGeometry();
+    const starVerts = [];
+    for (let i = 0; i < 2000; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 400 + Math.random() * 50;
+      starVerts.push(r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta));
+    }
+    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.7 });
+    scene.add(new THREE.Points(starGeo, starMat));
+
     // Ground
     const groundGeo = new THREE.PlaneGeometry(1200, 1200, 30, 30);
-    const groundMat = new THREE.MeshPhongMaterial({ color: 0x4a8c3f });
+    const groundMat = new THREE.MeshPhongMaterial({ color: 0x0d2010 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -2;
