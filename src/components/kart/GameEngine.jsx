@@ -337,10 +337,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Track surface - colored alternating stripes
-    const darkMat = new THREE.MeshPhongMaterial({ color: 0x333344, side: THREE.DoubleSide });
-    const lightMat = new THREE.MeshPhongMaterial({ color: 0x444455, side: THREE.DoubleSide });
-    const whiteMat = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+    // Track surface - glossy dark asphalt with neon edge lighting feel
+    const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.7, metalness: 0.1, side: THREE.DoubleSide });
+    const lightMat = new THREE.MeshStandardMaterial({ color: 0x16213e, roughness: 0.7, metalness: 0.1, side: THREE.DoubleSide });
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xddddee, roughness: 0.5, metalness: 0.2, side: THREE.DoubleSide, emissive: 0x8888aa, emissiveIntensity: 0.2 });
 
     for (let i = 0; i < trackPoints.length - 1; i++) {
       const curr = trackPoints[i];
