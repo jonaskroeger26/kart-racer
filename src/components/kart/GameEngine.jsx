@@ -799,7 +799,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       ).normalize();
 
       [-1, 1].forEach(side => {
-        const polePos = curr.clone().add(right.clone().multiplyScalar(side * (TRACK_WIDTH / 2 + RUNOFF + 3)));
+        const polePos = curr.clone().add(right.clone().multiplyScalar(side * (TRACK_WIDTH / 2 + CURB_W + 4)));
         const poleH = 14;
 
         // Pole
