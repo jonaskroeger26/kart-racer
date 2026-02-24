@@ -578,10 +578,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
     const kartPhysics = {
-      speeder:  { speedMax: diff.speedMax * 1.15, accel: diff.accel * 1.1, turn: 0.055, friction: 0.012 },
-      balanced: { speedMax: diff.speedMax,        accel: diff.accel,       turn: 0.060, friction: 0.010 },
-      heavy:    { speedMax: diff.speedMax * 0.88, accel: diff.accel * 0.9, turn: 0.045, friction: 0.008 },
-      offroad:  { speedMax: diff.speedMax * 0.95, accel: diff.accel * 1.05,turn: 0.065, friction: 0.010 },
+      speeder:  { speedMax: diff.speedMax * 1.15, accel: diff.accel * 1.1, turn: 0.055, friction: 0.8 },
+      balanced: { speedMax: diff.speedMax,        accel: diff.accel,       turn: 0.060, friction: 0.65 },
+      heavy:    { speedMax: diff.speedMax * 0.88, accel: diff.accel * 0.9, turn: 0.045, friction: 0.5 },
+      offroad:  { speedMax: diff.speedMax * 0.95, accel: diff.accel * 1.05,turn: 0.065, friction: 0.65 },
     };
     const physics = kartPhysics[kartType] || kartPhysics.balanced;
 
