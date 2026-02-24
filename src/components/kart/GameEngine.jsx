@@ -15,9 +15,9 @@ const PIT_ZONE_T_START = 0.96;
 const PIT_ZONE_T_END = 0.04;
 const PIT_STOP_DURATION_SEC = 2.5;
 
-// F1-style staggered grid constants
+// F1-style staggered grid: row spacing in track param (lap ~15000 units, need ~18 units between rows)
 const GRID_LATERAL = 5;
-const gridTrackTOffset = 0.0006;
+const gridTrackTOffset = 0.0012;
 
 function createTrackPath() {
   const a = 2800;
@@ -75,6 +75,79 @@ function createItemBox(position) {
 }
 
 const RB21_MODEL_URL = '/models/rb21.glb';
+
+function createGameSounds() {
+  let ctx = null;
+  let lastRedLight = -1;
+  let goPlayed = false;
+  let engineGain = null;
+  let engineOsc = null;
+  const playBeep = (freq, duration, type = 'sine') => {
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    osc.type = type;
+    g.gain.setValueAtTime(0.08, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  };
+  const playNoise = (duration) => {
+    if (!ctx) return;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.15;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const g = ctx.createGain();
+    src.connect(g);
+    g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.12, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    src.start(ctx.currentTime);
+    src.stop(ctx.currentTime + duration);
+  };
+  return {
+    init() {
+      if (ctx) return;
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      engineGain = ctx.createGain();
+      engineGain.gain.value = 0;
+      engineGain.connect(ctx.destination);
+      engineOsc = ctx.createOscillator();
+      engineOsc.type = 'sawtooth';
+      engineOsc.frequency.value = 60;
+      engineOsc.connect(engineGain);
+      engineOsc.start();
+    },
+    redLight(lightIndex) {
+      if (!ctx || lightIndex === lastRedLight) return;
+      lastRedLight = lightIndex;
+      playBeep(440 + lightIndex * 80, 0.12);
+    },
+    go() {
+      if (!ctx || goPlayed) return;
+      goPlayed = true;
+      playBeep(880, 0.25);
+      setTimeout(() => playBeep(1100, 0.2), 80);
+    },
+    engine(speedNorm) {
+      if (!engineOsc || !engineGain) return;
+      engineGain.gain.linearRampToValueAtTime(0.02 + speedNorm * 0.06, ctx.currentTime + 0.05);
+      engineOsc.frequency.linearRampToValueAtTime(55 + speedNorm * 120, ctx.currentTime + 0.05);
+    },
+    brake() {
+      playNoise(0.08);
+    },
+    collision() {
+      playBeep(120, 0.15, 'square');
+      playNoise(0.1);
+    },
+  };
+}
 function loadRB21Car() {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
@@ -387,17 +460,18 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const gantryH = 12;
     [-1,1].forEach(s => {
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, gantryH, 10), poleMat);
-      const pp = startPos.clone().addScaledVector(startRight, s*(half+2));
-      pp.y += gantryH/2;
+      const pp = startPos.clone().addScaledVector(startRight, s * (half + 6));
+      pp.y += gantryH / 2;
       pole.position.copy(pp);
       scene.add(pole);
     });
     const gantryBeam = new THREE.Mesh(
-      new THREE.BoxGeometry(TRACK_WIDTH+7, 0.65, 0.65),
-      new THREE.MeshStandardMaterial({ color: 0x222244, emissive:0x0033ff, emissiveIntensity:0.5, metalness:0.9, roughness:0.1 })
+      new THREE.BoxGeometry(TRACK_WIDTH + 7, 0.65, 0.65),
+      new THREE.MeshStandardMaterial({ color: 0x222244, emissive: 0x0033ff, emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 })
     );
-    gantryBeam.position.copy(startPos.clone().setY(gantryH));
-    gantryBeam.lookAt(gantryBeam.position.x+startTang.x, gantryBeam.position.y, gantryBeam.position.z+startTang.z);
+    gantryBeam.position.copy(startPos.clone());
+    gantryBeam.position.y = gantryH + 2;
+    gantryBeam.lookAt(gantryBeam.position.x + startTang.x, gantryBeam.position.y, gantryBeam.position.z + startTang.z);
     scene.add(gantryBeam);
 
     // Checkerboard start line
@@ -417,18 +491,18 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       }
     }
 
-    // F1-style white starting boxes
+    // F1-style white starting boxes: row 0 = pole (1 box), rows 1–4 = 2 boxes each, aligned with car grid
     const whiteLineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0 });
-    const boxLen = 2.8;
-    const boxWid = 1.2;
+    const boxLen = 3.2;
+    const boxWid = 1.4;
     for (let row = 0; row < 5; row++) {
-      const t = row === 0 ? 0 : -row * gridTrackTOffset;
+      const t = row * -gridTrackTOffset;
       const pt = trackCurve.getPointAt((t + 1) % 1);
       const tan = trackCurve.getTangentAt((t + 1) % 1);
-      const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0,1,0)).normalize();
-      const count = row === 4 ? 1 : 2;
+      const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0, 1, 0)).normalize();
+      const count = row === 0 ? 1 : 2;
       for (let col = 0; col < count; col++) {
-        const lat = col === 0 ? -GRID_LATERAL : GRID_LATERAL;
+        const lat = count === 1 ? -GRID_LATERAL : (col === 0 ? -GRID_LATERAL : GRID_LATERAL);
         const pos = pt.clone().addScaledVector(right, lat);
         pos.y = ASPHALT_Y + 0.014;
         const box = new THREE.Mesh(
@@ -464,12 +538,12 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     drsBoardGrp.lookAt(drsPos.x + drsTang.x * 20, drsBoardGrp.position.y, drsPos.z + drsTang.z * 20);
     scene.add(drsBoardGrp);
 
-    const standMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness:0.8, metalness:0.2 });
-    for (let s of [-1,1]) {
-      const stand = new THREE.Mesh(new THREE.BoxGeometry(0.5,6,30), standMat);
-      const sp = startPos.clone().add(startRight.clone().multiplyScalar(s*(half+CURB+9)));
-      stand.position.set(sp.x, sp.y+3, sp.z);
-      stand.lookAt(stand.position.x+startRight.x, stand.position.y, stand.position.z+startRight.z);
+    const standMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.8, metalness: 0.2 });
+    for (let s of [-1, 1]) {
+      const stand = new THREE.Mesh(new THREE.BoxGeometry(0.5, 6, 28), standMat);
+      const sp = startPos.clone().add(startRight.clone().multiplyScalar(s * (half + CURB + GRASS_W - 4)));
+      stand.position.set(sp.x, sp.y + 3, sp.z);
+      stand.lookAt(stand.position.x + startRight.x, stand.position.y, stand.position.z + startRight.z);
       scene.add(stand);
       const seatColors = [0xee7700, 0xffffff, 0xee1111, 0x0033ee];
       for (let row=0;row<4;row++) for (let col=0;col<16;col++) {
@@ -556,9 +630,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     for (let i = 0; i < NUM_AI; i++) {
       const car = new THREE.Group();
       scene.add(car);
-      const row = Math.floor(i / 2);
+      const row = Math.floor(i / 2) + 1;
       const col = i % 2;
-      const startT = (row + 1) * -gridTrackTOffset;
+      const startT = row * -gridTrackTOffset;
       const startOffset = col === 0 ? -GRID_LATERAL : GRID_LATERAL;
       const personality = personalities[i % personalities.length];
       const topSpeed = aiBaseSpeed * personality.topSpeedMult * (0.95 + Math.random() * 0.10);
@@ -614,6 +688,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     let greenTime = null;
     let raceStarted = false;
     let frame = 0;
+    const gameSounds = createGameSounds();
 
     function animate() {
       animFrameRef.current = requestAnimationFrame(animate);
@@ -624,10 +699,12 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         return;
       }
       const elapsed = (Date.now() - startTime) / 1000;
+      gameSounds.init();
       if (!raceStarted) {
         if (elapsed >= RED_LIGHTS_DURATION) {
           raceStarted = true;
           greenTime = Date.now();
+          gameSounds.go();
         }
       }
 
@@ -652,8 +729,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           const drag = physics.drag * ps.speed * ps.speed;
           const thrust = physics.thrust * boostMult;
           ps.speed = Math.min(SPEED_MAX, ps.speed + thrust - drag);
+          gameSounds.engine(ps.speed / physics.speedMax);
         } else if (keys['ArrowDown'] || keys['KeyS']) {
           ps.speed = Math.max(-40, ps.speed - physics.braking);
+          if (frame % 8 === 0) gameSounds.brake();
         } else {
           const engineBraking = 1.4;
           const drag = physics.drag * ps.speed * ps.speed;
@@ -662,24 +741,23 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
         const si = (keys['ArrowLeft']||keys['KeyA']) ? 1 : (keys['ArrowRight']||keys['KeyD']) ? -1 : 0;
         const speedNorm = Math.min(1, ps.speed / physics.speedMax);
-        const steerTorque = 0.0032 * (1.0 - speedNorm * 0.45);
-
+        const steerRate = 0.0014 * (1.0 - speedNorm * 0.6);
         if (si !== 0) {
-          ps.steerVel += si * steerTorque * 60;
-          ps.steerVel = Math.max(-0.072, Math.min(0.072, ps.steerVel));
+          ps.steerVel += si * steerRate * 60;
+          ps.steerVel = Math.max(-0.042, Math.min(0.042, ps.steerVel));
         } else {
-          ps.steerVel *= 0.72;
-          ps.heading -= ps.heading * 0.06;
+          ps.steerVel *= 0.65;
+          ps.heading -= ps.heading * 0.08;
         }
-        ps.steerVel *= 0.88;
+        ps.steerVel *= 0.82;
         ps.heading += ps.steerVel;
 
-        const MAX_HEADING = 0.56;
+        const MAX_HEADING = 0.38;
         ps.heading = Math.max(-MAX_HEADING, Math.min(MAX_HEADING, ps.heading));
 
-        const lateralScale = LATERAL_SCALE;
+        const lateralScale = LATERAL_SCALE * (0.7 + 0.3 * (1 - speedNorm));
         const wantedLateralVel = -ps.speed * Math.sin(ps.heading) * lateralScale;
-        const grip = 0.20 + speedNorm * 0.06;
+        const grip = 0.14 + speedNorm * 0.08;
         ps.lateralVel += (wantedLateralVel - ps.lateralVel) * grip;
 
         ps.lastT = ps.trackT;
@@ -883,6 +961,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
             ps.damaged = true;
             ps.collisionCooldown = COLLISION_COOLDOWN_FRAMES;
             ps.speed = Math.max(0, ps.speed * 0.55);
+            gameSounds.collision();
           }
         }
       }
@@ -912,6 +991,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
       const preGreenElapsed = (Date.now() - startTime) / 1000;
       const redLightsOn = !raceStarted ? (preGreenElapsed >= 5 ? 5 : Math.min(5, Math.floor(preGreenElapsed) + 1)) : 0;
+      if (!raceStarted && redLightsOn > 0) gameSounds.redLight(redLightsOn);
+      if (!raceStarted && redLightsOn > 0) gameSounds.redLight(redLightsOn);
 
       if (onGameState) {
         onGameState({
