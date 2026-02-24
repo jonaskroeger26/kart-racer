@@ -239,6 +239,11 @@ export default function MainMenu({ onStart }) {
   const rotateX = useTransform(mouseY, [-300, 300], [8, -8]);
   const rotateY = useTransform(mouseX, [-500, 500], [-8, 8]);
 
+  // Reset to main screen whenever this component mounts
+  useEffect(() => {
+    setScreen('main');
+  }, []);
+
   const kart = KARTS[selectedKart];
   const diff = DIFFICULTIES[selectedDiff];
 
