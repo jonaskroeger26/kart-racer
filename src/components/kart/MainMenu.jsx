@@ -330,6 +330,7 @@ export default function MainMenu({ onStart }) {
 
             {/* Buttons */}
             <div className="flex flex-col items-center gap-3 w-full max-w-xs px-6">
+
               {/* RACE NOW */}
               <button
                 onClick={() => setScreen('select')}
