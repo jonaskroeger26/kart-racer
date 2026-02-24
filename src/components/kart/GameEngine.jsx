@@ -835,7 +835,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const standGeo = new THREE.BoxGeometry(0.6, 7, 28);
       const standMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, metalness: 0.2 });
       const stand = new THREE.Mesh(standGeo, standMat);
-      const standPos = startPos.clone().add(startRight.clone().multiplyScalar(side * (TRACK_WIDTH / 2 + RUNOFF + 8)));
+      const standPos = startPos.clone().add(startRight.clone().multiplyScalar(side * (TRACK_WIDTH / 2 + CURB_W + 10)));
       stand.position.set(standPos.x, standPos.y + 3.5, standPos.z);
       stand.lookAt(stand.position.x + startRight.x, stand.position.y, stand.position.z + startRight.z);
       stand.castShadow = true;
