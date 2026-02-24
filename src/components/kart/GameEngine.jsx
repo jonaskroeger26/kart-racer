@@ -14,27 +14,21 @@ const PIT_ZONE_T_START = 0.96;
 const PIT_ZONE_T_END = 0.04;
 const PIT_STOP_DURATION_SEC = 2.5;
 
-// Single non-crossing loop: one continuous lap, no overlapping segments.
-// Main straight is only traversed once (south). Return approaches start from the side so track never crosses.
+// Oval from ellipse — mathematically cannot self-intersect. No crossing, no X, no fences on track.
 function createTrackPath() {
-  const pts = [
-    // Start/Finish straight — south only (never run north along this line)
-    [0, 0, 0], [0, 0, -45], [0, 0, -100], [0, 0, -155], [0, 0, -210],
-    // Turn 1 (right): bottom — curve east
-    [50, 0.2, -238], [120, 0.3, -245], [190, 0.3, -235], [250, 0.2, -210],
-    // Back straight — east
-    [278, 0, -165], [288, 0, -105], [290, 0, -45], [285, 0, 15], [272, 0, 70],
-    // Turn 2 (right): far side — curve north
-    [248, 0.3, 118], [200, 0.4, 158], [142, 0.4, 182], [78, 0.3, 188], [15, 0.2, 178],
-    // North straight — west
-    [-42, 0, 152], [-92, 0, 112], [-125, 0, 62], [-138, 0, 8], [-132, 0, -45], [-112, 0, -92],
-    // Turn 3 (right): curve west then south; all points left of main straight (x <= 0) so track never crosses
-    [-88, 0.2, -132], [-55, 0.2, -162], [-38, 0.2, -182], [-22, 0.15, -196], [-30, 0, -198],
-    // Turn 4: stay on left (x <= 0), curve around to (0,0,0) from the left — no second run on main straight
-    [-48, 0, -192], [-62, 0, -172], [-68, 0, -145], [-62, 0, -112], [-50, 0, -78], [-35, 0, -45], [-18, 0, -18], [0, 0, 0],
-  ];
+  const a = 280; // half-width (x)
+  const b = 200; // half-length (z)
+  const n = 48;  // number of points — start at bottom (0, 0, -b)
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const t = (i / n) * Math.PI * 2 - Math.PI / 2; // start at bottom
+    const x = a * Math.cos(t);
+    const z = b * Math.sin(t);
+    const y = 0.12 * Math.sin(t * 2);
+    pts.push([x, y, z]);
+  }
 
-  return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.4);
+  return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.3);
 }
 
 function createF1Car(color) {
