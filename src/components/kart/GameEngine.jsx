@@ -15,17 +15,66 @@ const PIT_ZONE_T_END = 0.04;
 const PIT_STOP_DURATION_SEC = 2.5;
 
 function createTrackPath() {
+  // Nürburgring GP-inspired layout — no self-intersections, wide sweeping corners
   const pts = [
-    [0, 0, 0], [0, 0, -20], [0, 0, -45], [0, 0, -70], [0, 0, -95], [0, 0, -120], [0, 0, -145],
-    [25, 0, -165], [60, 0, -178], [100, 0, -182], [145, 0, -172], [185, 0, -152],
-    [218, 0, -120], [240, 0, -80], [248, 0, -40], [242, 0, 0],
-    [222, 0, 35], [190, 0, 62], [150, 0, 80], [105, 0, 90],
-    [55, 0, 92], [0, 0, 90], [-55, 0, 92], [-105, 0, 90],
-    [-150, 0, 80], [-188, 0, 58], [-212, 0, 25], [-220, 0, -15], [-212, 0, -55],
-    [-188, 0, -88], [-152, 0, -108], [-108, 0, -118], [-60, 0, -122], [-25, 0, -120],
-    [0, 0, -118], [0, 0, -90], [0, 0, -55], [0, 0, -25], [0, 0, 0],
+    // Start/finish straight (south)
+    [ 0,   0,   0],
+    [ 0,   0, -40],
+    [ 0,   0, -80],
+    // Turn 1 — tight right hairpin
+    [ 20,  0,-110],
+    [ 55,  0,-130],
+    [ 90,  0,-125],
+    [115,  0,-108],
+    [120,  0, -85],
+    // Back straight heading east
+    [120,  0, -55],
+    [120,  0, -20],
+    // Turn 3 — sweeping right
+    [128,  0,  20],
+    [148,  0,  55],
+    [175,  0,  70],
+    // Long curve right
+    [210,  0,  60],
+    [240,  0,  30],
+    [252,  0,   0],
+    [248,  0, -35],
+    // Turn 5 — chicane-like left-right
+    [228,  0, -65],
+    [200,  0, -88],
+    [170,  0, -95],
+    // Sweeping left back
+    [135,  0, -88],
+    // Mercedes arena style — tight hairpin left
+    [105,  0, -68],
+    [ 80,  0, -42],
+    [ 68,  0, -10],
+    [ 75,  0,  22],
+    // NGK chicane — right-left
+    [ 95,  0,  50],
+    [100,  0,  80],
+    [ 88,  0, 105],
+    [ 62,  0, 118],
+    // Schumacher-S left sweep
+    [ 30,  0, 115],
+    [  0,  0, 108],
+    [-35,  0, 105],
+    // Long back section
+    [-68,  0,  95],
+    [-95,  0,  80],
+    [-115, 0,  55],
+    [-120, 0,  22],
+    [-110, 0, -10],
+    // Ford curve — sweeping right
+    [-90,  0, -38],
+    [-65,  0, -55],
+    [-35,  0, -60],
+    // Return to start
+    [-15,  0, -42],
+    [  0,  0, -20],
+    [  0,  0,   0],
   ];
-  return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.4);
+  return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.5);
 }
 
 function createF1Car(color) {
