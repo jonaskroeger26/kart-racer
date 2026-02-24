@@ -6,6 +6,13 @@ const TRACK_WIDTH = 20;
 const BOOST_DURATION = 120;
 const NUM_AI = 15;
 const LAPS_TO_WIN = 3;
+const OFF_TRACK_RESPAWN_SEC = 2;
+const COLLISION_DIST = 4.5;
+const COLLISION_COOLDOWN_FRAMES = 120;
+const DAMAGED_SPEED_FACTOR = 0.38;
+const PIT_ZONE_T_START = 0.96;
+const PIT_ZONE_T_END = 0.04;
+const PIT_STOP_DURATION_SEC = 2.5;
 
 // F1-style circuit: main straight, heavy T1, esses, back straight, hairpin, twisty return
 function createTrackPath() {
@@ -755,9 +762,14 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
     // ── PLAYER STATE ──
     const ps = {
-      trackT:0, speed:0, lateralOffset:0, lap:0,
-      lastT:0, boost:0, hasItem:false, position:1,
-      finished:false, finishTime:null,
+      trackT: 0, speed: 0, lateralOffset: 0, lap: 0,
+      lastT: 0, boost: 0, hasItem: false, position: 1,
+      finished: false, finishTime: null,
+      damaged: false,
+      offTrackSince: null,
+      collisionCooldown: 0,
+      inPitSince: null,
+      lastOnTrackT: 0,
     };
 
     let startTime = Date.now(), countdown = 3, raceStarted = false, frame = 0;
@@ -786,7 +798,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       if (raceStarted && !ps.finished) {
         const keys = keysRef.current;
         const boostMult = ps.boost > 0 ? 1.35 : 1;
-        const SPEED_MAX = physics.speedMax * boostMult;
+        const damageMult = ps.damaged ? DAMAGED_SPEED_FACTOR : 1;
+        const SPEED_MAX = physics.speedMax * boostMult * damageMult;
 
         if (keys['ArrowUp'] || keys['KeyW']) {
           // Accelerate only while holding throttle
@@ -802,12 +815,31 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           ps.speed = Math.max(0, ps.speed - engineBraking - drag);
         }
 
+        // Steering: allow going off track (up to grass), then respawn after OFF_TRACK_RESPAWN_SEC
         const si = (keys['ArrowLeft']||keys['KeyA'])?-1:(keys['ArrowRight']||keys['KeyD'])?1:0;
         ps.lateralOffset += si*physics.turn*Math.max(0.3,ps.speed/physics.speedMax)*2;
-        ps.lateralOffset = Math.max(-half*0.9, Math.min(half*0.9, ps.lateralOffset));
+        const offTrackLimit = half + 22;
+        ps.lateralOffset = Math.max(-offTrackLimit, Math.min(offTrackLimit, ps.lateralOffset));
+
+        const isOffTrack = Math.abs(ps.lateralOffset) > half;
+        if (isOffTrack) {
+          if (ps.offTrackSince == null) ps.offTrackSince = Date.now();
+          const offSec = (Date.now() - ps.offTrackSince) / 1000;
+          if (offSec >= OFF_TRACK_RESPAWN_SEC) {
+            ps.trackT = (ps.lastOnTrackT - 0.025 + 1) % 1;
+            ps.lateralOffset = 0;
+            ps.speed = Math.max(0, ps.speed * 0.4);
+            ps.offTrackSince = null;
+          }
+        } else {
+          ps.lastOnTrackT = ps.trackT;
+          ps.offTrackSince = null;
+        }
 
         if (keys['Space']&&ps.hasItem) { ps.boost=BOOST_DURATION; ps.hasItem=false; }
         if (ps.boost>0) ps.boost--;
+
+        if (ps.collisionCooldown > 0) ps.collisionCooldown--;
 
         ps.lastT = ps.trackT;
         ps.trackT = (ps.trackT + ps.speed * TRACK_SCALE + 1) % 1;
@@ -955,6 +987,31 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         ai.mesh.rotateY(Math.PI);
       });
 
+      // Collision with AI: get hit → damaged, need pit stop
+      if (raceStarted && !ps.finished && ps.collisionCooldown <= 0) {
+        const pPos = playerCarRef.current.position;
+        for (const ai of aiKarts) {
+          if (pPos.distanceTo(ai.mesh.position) < COLLISION_DIST) {
+            ps.damaged = true;
+            ps.collisionCooldown = COLLISION_COOLDOWN_FRAMES;
+            break;
+          }
+        }
+      }
+
+      // Pit stop: when damaged, slow down in pit zone (main straight) to repair
+      const isInPitZone = normT >= PIT_ZONE_T_START || normT <= PIT_ZONE_T_END;
+      if (ps.damaged && isInPitZone && ps.speed < 80) {
+        ps.inPitSince = (ps.inPitSince ?? 0) + 1;
+        const pitFrames = Math.ceil(PIT_STOP_DURATION_SEC * 60);
+        if (ps.inPitSince >= pitFrames) {
+          ps.damaged = false;
+          ps.inPitSince = null;
+        }
+      } else {
+        ps.inPitSince = null;
+      }
+
       // Position calc — sort by total progress (lap + fractional T)
       const all = [
         { progress: ps.lap + ps.trackT, isPlayer: true },
@@ -983,6 +1040,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           finishTime: ps.finishTime,
           playerTrackT: normT,
           aiPositions: aiKarts.map(a=>a.trackT),
+          damaged: ps.damaged,
+          inPit: ps.damaged && isInPitZone && ps.speed < 80,
         });
       }
 

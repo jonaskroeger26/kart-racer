@@ -233,7 +233,7 @@ function Minimap({ playerT, aiPositions }) {
 
 export default function RaceHUD({ gameState, onBackToMenu }) {
   if (!gameState) return null;
-  const { speed, lap, totalLaps, position, totalRacers, hasItem, boost, countdown, raceTime, finished, finishTime, playerTrackT, aiPositions } = gameState;
+  const { speed, lap, totalLaps, position, totalRacers, hasItem, boost, countdown, raceTime, finished, finishTime, playerTrackT, aiPositions, damaged, inPit } = gameState;
 
   return (
     <div className="absolute inset-0 pointer-events-none select-none" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -304,6 +304,21 @@ export default function RaceHUD({ gameState, onBackToMenu }) {
           <Minimap playerT={playerTrackT} aiPositions={aiPositions} />
         </motion.div>
       </div>
+
+      {/* ── DAMAGED / PIT STOP ── */}
+      <AnimatePresence>
+        {damaged && !finished && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="absolute top-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl font-black text-center text-sm tracking-wider"
+            style={{ background: inPit ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.9)', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}
+          >
+            {inPit ? '🔧 PIT STOP — REPAIRING...' : '⚠️ DAMAGED — SLOW DOWN & ENTER PIT LANE'}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── BOOST EDGE GLOW ── */}
       <AnimatePresence>
