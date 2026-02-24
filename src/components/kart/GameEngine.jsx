@@ -412,11 +412,12 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     scene.add(ground);
 
     // ── TRACK SURFACE – clear asphalt (dark tarmac), raised above grass ──
-    const ASPHALT_Y = 0.08;
+    const ASPHALT_Y = 0.12;
     const asphaltMat = new THREE.MeshStandardMaterial({
-      color: 0x1a1a1a,
-      roughness: 0.92,
-      metalness: 0.02,
+      color: 0x2a2a2a,
+      roughness: 0.9,
+      metalness: 0.03,
+      side: THREE.DoubleSide,
     });
     const curbRedMat  = new THREE.MeshStandardMaterial({ color: 0xdd1111, roughness: 0.5, metalness: 0 });
     const curbWhtMat  = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0 });
@@ -425,10 +426,11 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
     const aV=[], aI=[], crV=[], crI=[], cwV=[], cwI=[], gV=[], gI=[], wV=[], wI=[];
 
+    // Quads: p0=leftCurr, p1=rightCurr, p2=leftNext, p3=rightNext. Wind so normal points UP (visible from above).
     function addQuad(vA, iA, p0, p1, p2, p3, yOff=0) {
       const b = vA.length / 3;
       vA.push(p0.x,p0.y+yOff,p0.z, p1.x,p1.y+yOff,p1.z, p2.x,p2.y+yOff,p2.z, p3.x,p3.y+yOff,p3.z);
-      iA.push(b,b+2,b+1, b+1,b+2,b+3);
+      iA.push(b, b+1, b+2,  b+1, b+3, b+2);
     }
 
     const up = new THREE.Vector3(0,1,0);
