@@ -239,11 +239,6 @@ export default function MainMenu({ onStart }) {
   const rotateX = useTransform(mouseY, [-300, 300], [8, -8]);
   const rotateY = useTransform(mouseX, [-500, 500], [-8, 8]);
 
-  // Reset to main screen whenever this component mounts
-  useEffect(() => {
-    setScreen('main');
-  }, []);
-
   const kart = KARTS[selectedKart];
   const diff = DIFFICULTIES[selectedDiff];
 
@@ -293,17 +288,9 @@ export default function MainMenu({ onStart }) {
       <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #8b5cf6, transparent)', filter: 'blur(60px)' }} />
       <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #ef4444, transparent)', filter: 'blur(60px)' }} />
 
-      <AnimatePresence mode="wait">
-
         {/* ═══════════════ MAIN SCREEN ═══════════════ */}
         {screen === 'main' && (
-          <motion.div
-            key="main"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="relative h-full flex flex-col items-center justify-center"
-          >
+          <div className="relative h-full flex flex-col items-center justify-center">
             {/* Hero title */}
             <div className="text-center mb-12 select-none">
               <div
