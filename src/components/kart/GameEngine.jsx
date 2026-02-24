@@ -22,16 +22,16 @@ const gridTrackTOffset = 0.0006;
 function createTrackPath() {
   const a = 2800;
   const b = 2000;
-  const n = 48;
+  const n = 96;
   const pts = [];
   for (let i = 0; i < n; i++) {
     const t = (i / n) * Math.PI * 2 - Math.PI / 2;
     const x = a * Math.cos(t);
     const z = b * Math.sin(t);
     const y = 0.12 * Math.sin(t * 2);
-    pts.push([x, y, z]);
+    pts.push(new THREE.Vector3(x, y, z));
   }
-  return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.3);
+  return new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.3);
 }
 
 function createItemBox(position) {
