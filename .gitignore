@@ -2,6 +2,10 @@
 .env
 .env.*
 
+# Large 3D assets (RB21 model ~60MB – add locally or use CDN)
+public/models/*.glb
+public/models/*.gltf
+
 # Logs
 logs
 *.log

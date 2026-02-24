@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const TRACK_WIDTH = 20;
 const BOOST_DURATION = 120;
@@ -270,6 +271,40 @@ function createItemBox(position) {
   group.add(ring);
   group.userData = { active: true, respawnTimer: 0 };
   return group;
+}
+
+// Load Red Bull RB21 GLB and scale/orient to match game (drivable player car)
+const RB21_MODEL_URL = '/models/rb21.glb';
+function loadRB21Car() {
+  return new Promise((resolve, reject) => {
+    const loader = new GLTFLoader();
+    loader.load(
+      RB21_MODEL_URL,
+      (gltf) => {
+        const model = gltf.scene;
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const targetSize = 4;
+        const scale = targetSize / maxDim;
+        model.scale.setScalar(scale);
+        model.rotation.y = Math.PI;
+        model.position.set(0, 0, 0);
+        const group = new THREE.Group();
+        group.add(model);
+        resolve(group);
+      },
+      undefined,
+      () => reject(new Error('RB21 model failed to load'))
+    );
+  });
 }
 
 export default function GameEngine({ onGameState, kartColor, kartType, difficulty }) {
@@ -578,9 +613,16 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       itemBoxes.push(box);
     }
 
-    // ── CARS ──
-    const playerCar = createF1Car(kartColor);
-    scene.add(playerCar);
+    // ── CARS (player: RB21 GLB if available, else procedural; use ref so we can swap) ──
+    const playerCarRef = { current: createF1Car(kartColor) };
+    scene.add(playerCarRef.current);
+    loadRB21Car()
+      .then((rb21) => {
+        scene.remove(playerCarRef.current);
+        playerCarRef.current = rb21;
+        scene.add(rb21);
+      })
+      .catch(() => {});
 
     const aiColors = [0xff6600, 0x1155ff, 0x22cc55, 0xffcc00, 0xcc44ff, 0xff2222, 0x00ccff];
     const aiKarts = [];
@@ -650,7 +692,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         }
 
         itemBoxes.forEach(box => {
-          if (box.userData.active && playerCar.position.distanceTo(box.position)<3.5 && !ps.hasItem) {
+          if (box.userData.active && playerCarRef.current.position.distanceTo(box.position)<3.5 && !ps.hasItem) {
             ps.hasItem=true; box.userData.active=false; box.userData.respawnTimer=400;
           }
         });
@@ -662,6 +704,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const pNext = trackCurve.getPointAt((normT+0.001)%1);
       const pDir  = new THREE.Vector3().subVectors(pNext, pPos).normalize();
       const pRight= new THREE.Vector3().crossVectors(pDir, new THREE.Vector3(0,1,0)).normalize();
+      const playerCar = playerCarRef.current;
       playerCar.position.copy(pPos).add(pRight.clone().multiplyScalar(ps.lateralOffset));
       playerCar.position.y += 0.12;
       playerCar.lookAt(playerCar.position.clone().add(pDir));
@@ -705,8 +748,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
       // Camera
       const camBack = pDir.clone().multiplyScalar(-10); camBack.y=5.5;
-      camera.position.lerp(playerCar.position.clone().add(camBack),0.09);
-      camera.lookAt(playerCar.position.clone().setY(playerCar.position.y+1.2));
+      camera.position.lerp(playerCarRef.current.position.clone().add(camBack),0.09);
+      camera.lookAt(playerCarRef.current.position.clone().setY(playerCarRef.current.position.y+1.2));
 
       if (onGameState) {
         onGameState({
