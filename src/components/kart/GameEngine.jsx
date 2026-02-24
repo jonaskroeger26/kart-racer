@@ -489,16 +489,20 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     gantryBeam.lookAt(gantryBeam.position.x+startTang.x, gantryBeam.position.y, gantryBeam.position.z+startTang.z);
     scene.add(gantryBeam);
 
+    // Checkerboard start line painted flat on road surface
     for (let c = 0; c < 14; c++) {
       for (let r = 0; r < 3; r++) {
-        if ((c+r)%2===0) {
-          const cm = new THREE.Mesh(new THREE.BoxGeometry(1.1,0.02,1.1), new THREE.MeshStandardMaterial({ color: c%2===0?0xffffff:0x111111 }));
-          cm.position.copy(startPos.clone()
-            .add(startRight.clone().multiplyScalar((c-7)*1.3+0.65))
-            .add(startTang.clone().multiplyScalar(r*1.1-1.65)));
-          cm.position.y += 0.06;
-          scene.add(cm);
-        }
+        const cm = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.1, 1.1),
+          new THREE.MeshStandardMaterial({ color: (c+r)%2===0 ? 0xffffff : 0x111111, roughness: 0.8 })
+        );
+        cm.rotation.x = -Math.PI / 2;
+        cm.position.copy(startPos.clone()
+          .add(startRight.clone().multiplyScalar((c-7)*1.3+0.65))
+          .add(startTang.clone().multiplyScalar(r*1.1-1.65)));
+        cm.position.y = ASPHALT_Y + 0.015;
+        cm.renderOrder = 3;
+        scene.add(cm);
       }
     }
 
