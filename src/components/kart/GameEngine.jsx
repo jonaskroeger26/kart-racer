@@ -80,18 +80,27 @@ function loadRB21Car() {
   });
 }
 
+// Only tint livery/body parts; leave wheels, driver, carbon, rubber, etc. unchanged.
+function isLiveryPart(meshName, matName) {
+  const n = (meshName || '').toLowerCase();
+  const m = (matName || '').toLowerCase();
+  if (/tire|tyre|rubber|wheel|rim|driver|helmet|carbon|glass|black|interior|seat|brake|caliper/.test(n) || /tire|tyre|rubber|wheel|rim|driver|helmet|carbon|glass|black/.test(m)) return false;
+  if (/body|paint|livery|wing|stripe|accent|monocoque|sidepod|engine|nose|bargeboard|floor|diffuser|endplate/.test(n) || /paint|body|livery|wing|stripe|accent/.test(m)) return true;
+  return false;
+}
+
 function cloneRB21WithLiveryColor({ model }, colorHex) {
   const clone = model.clone(true);
   clone.traverse((child) => {
     if (child.isMesh && child.material) {
       const mats = Array.isArray(child.material) ? child.material : [child.material];
-      mats.forEach((mat) => {
+      mats.forEach((mat, idx) => {
+        if (!isLiveryPart(child.name || '', mat.name || '')) return;
         const m = mat.clone();
         m.color.setHex(colorHex);
-        if (m.emissive) m.emissive.setHex(colorHex).multiplyScalar(0.12);
+        if (m.emissive) m.emissive.setHex(colorHex).multiplyScalar(0.1);
         if (Array.isArray(child.material)) {
-          const i = child.material.indexOf(mat);
-          child.material[i] = m;
+          child.material[idx] = m;
         } else {
           child.material = m;
         }
