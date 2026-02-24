@@ -370,14 +370,14 @@ export default function RaceHUD({ gameState, onBackToMenu }) {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => window.location.reload()}
+                    onClick={onBackToMenu}
                     className="flex-1 py-3.5 rounded-xl font-black text-sm tracking-widest text-white/60 hover:text-white transition-colors"
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
                   >
                     MENU
                   </button>
                   <button
-                    onClick={() => window.location.reload()}
+                    onClick={onBackToMenu}
                     className="flex-1 py-3.5 rounded-xl font-black text-sm tracking-widest text-white"
                     style={{ background: 'linear-gradient(135deg, #dc2626, #ea580c)', boxShadow: '0 8px 24px rgba(220,38,38,0.4)' }}
                   >
