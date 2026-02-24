@@ -642,14 +642,19 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const aiBaseSpeed = physics.speedMax * diff.aiSpeed;
 
     const racingLineZones = [
-      { s: 0.00, e: 0.08, apex: 3 }, { s: 0.08, e: 0.12, apex: -5 },
-      { s: 0.12, e: 0.18, apex: 6 }, { s: 0.18, e: 0.22, apex: -4 },
-      { s: 0.22, e: 0.28, apex: 4 }, { s: 0.28, e: 0.32, apex: -4 },
-      { s: 0.32, e: 0.38, apex: -5 }, { s: 0.38, e: 0.42, apex: 5 },
-      { s: 0.42, e: 0.55, apex: 0 }, { s: 0.55, e: 0.60, apex: 5 },
-      { s: 0.60, e: 0.66, apex: -6 }, { s: 0.66, e: 0.72, apex: 5 },
-      { s: 0.72, e: 0.78, apex: -4 }, { s: 0.78, e: 0.84, apex: 4 },
-      { s: 0.84, e: 1.00, apex: 0 },
+      { s: 0.00, e: 0.10, apex:  0 },
+      { s: 0.10, e: 0.15, apex:  5 },
+      { s: 0.15, e: 0.22, apex: -5 },
+      { s: 0.22, e: 0.30, apex:  4 },
+      { s: 0.30, e: 0.38, apex: -4 },
+      { s: 0.38, e: 0.44, apex:  5 },
+      { s: 0.44, e: 0.50, apex: -5 },
+      { s: 0.50, e: 0.58, apex:  4 },
+      { s: 0.58, e: 0.65, apex: -5 },
+      { s: 0.65, e: 0.72, apex:  5 },
+      { s: 0.72, e: 0.80, apex: -4 },
+      { s: 0.80, e: 0.88, apex:  4 },
+      { s: 0.88, e: 1.00, apex:  0 },
     ];
 
     function getRacingLineOffset(t) {
