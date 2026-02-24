@@ -363,25 +363,29 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       }
     }
 
-    // F1-style starting blocks (raised pads at grid positions)
-    const blockMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.4, roughness: 0.7 });
-    const gridRowOffsetsBlock = [-8, -2.5, 2.5, 8];
-    const gridTrackTOffsetBlock = 0.00035;
-    for (let row = 0; row < 3; row++) {
-      const t = row === 0 ? 0 : -row * gridTrackTOffsetBlock;
+    // F1-style white starting boxes painted on asphalt (staggered 2 per row, like real F1)
+    const whiteLineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0 });
+    const boxLen = 2.8;
+    const boxWid = 1.2;
+    for (let row = 0; row < 5; row++) {
+      const t = row === 0 ? 0 : -row * gridTrackTOffset;
       const pt = trackCurve.getPointAt((t + 1) % 1);
       const tan = trackCurve.getTangentAt((t + 1) % 1);
       const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0,1,0)).normalize();
-      const count = row === 0 ? 1 : 4;
+      const count = row === 4 ? 1 : 2;
       for (let col = 0; col < count; col++) {
-        const lat = row === 0 ? 0 : gridRowOffsetsBlock[col];
+        const lat = col === 0 ? -GRID_LATERAL : GRID_LATERAL;
         const pos = pt.clone().addScaledVector(right, lat);
-        pos.y = ASPHALT_Y + 0.02;
-        const block = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, 0.9), blockMat);
-        block.position.copy(pos);
-        block.rotation.x = -Math.PI / 2;
-        block.rotation.y = Math.atan2(tan.x, tan.z);
-        scene.add(block);
+        pos.y = ASPHALT_Y + 0.014;
+        const box = new THREE.Mesh(
+          new THREE.PlaneGeometry(boxWid, boxLen),
+          whiteLineMat
+        );
+        box.rotation.x = -Math.PI / 2;
+        box.rotation.y = Math.atan2(tan.x, tan.z);
+        box.position.copy(pos);
+        box.renderOrder = 3;
+        scene.add(box);
       }
     }
 
@@ -495,17 +499,17 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       { name: 'erratic',    rbStrength: 0.060, rbCap: 0.20, topSpeedMult: 1.02, racingLineFidelity: 0.55, itemUseGap: 0.02, laneWander: 0.04 },
     ];
 
-    // F1-style grid: 2 rows of 4, player on pole. Offsets in meters (lateral), trackT behind start.
-    const gridRowOffsets = [-8, -2.5, 2.5, 8];
-    const gridTrackTOffset = 0.00035;
+    // F1-style staggered grid: 2 cars per row (left/right), player on pole (P1 left). Row spacing so cars don’t bump.
+    const GRID_LATERAL = 5;       // meters each side of center (P1 left = -5, P2 right = +5)
+    const gridTrackTOffset = 0.0006;
 
     for (let i = 0; i < NUM_AI; i++) {
       const car = new THREE.Group();
       scene.add(car);
-      const row = Math.floor(i / 4);
-      const col = i % 4;
+      const row = Math.floor(i / 2);
+      const col = i % 2;
       const startT = (row + 1) * -gridTrackTOffset;
-      const startOffset = gridRowOffsets[col];
+      const startOffset = col === 0 ? -GRID_LATERAL : GRID_LATERAL;
       const personality = personalities[i % personalities.length];
       const topSpeed = aiBaseSpeed * personality.topSpeedMult * (0.95 + Math.random() * 0.10);
       aiKarts.push({
@@ -533,9 +537,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       })
       .catch(() => {});
 
-    // ── PLAYER STATE ──
+    // ── PLAYER STATE (P1 on pole, left side of track) ──
     const ps = {
-      trackT: 0, speed: 0, lateralOffset: 0, lap: 0,
+      trackT: 0, speed: 0, lateralOffset: -GRID_LATERAL, lap: 0,
       heading: 0,    // yaw angle relative to track tangent
       steerVel: 0,   // steering angular velocity (builds up, decays)
       lateralVel: 0, // lateral velocity with momentum (sliding feel)
