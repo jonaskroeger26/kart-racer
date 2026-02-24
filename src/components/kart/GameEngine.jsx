@@ -663,147 +663,127 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     scene.add(ground);
 
     // === TRACK SURFACE ===
-    // Asphalt — dark grey with subtle variation
-    const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.92, metalness: 0.0 });
-    const asphaltLightMat = new THREE.MeshStandardMaterial({ color: 0x282828, roughness: 0.9, metalness: 0.0 });
-    // Center line markings
-    const centerLineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0, emissive: 0xffffff, emissiveIntensity: 0.05 });
-    // Red/white curb
-    const curbRedMat = new THREE.MeshStandardMaterial({ color: 0xdd1111, roughness: 0.7, metalness: 0 });
-    const curbWhiteMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.7, metalness: 0 });
-    // Runoff (grey tarmac/astroturf)
-    const runoffMat = new THREE.MeshStandardMaterial({ color: 0x3a4a3a, roughness: 0.95, metalness: 0 });
+    const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.88, metalness: 0.0 });
+    const curbRedMat = new THREE.MeshStandardMaterial({ color: 0xdd1111, roughness: 0.6, metalness: 0 });
+    const curbWhiteMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.6, metalness: 0 });
+    const centerLineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0, emissive: 0xffffff, emissiveIntensity: 0.08 });
+    const grassMat = new THREE.MeshStandardMaterial({ color: 0x2d6a1a, roughness: 1.0, metalness: 0 });
 
-    const RUNOFF = 5; // runoff area width each side
+    // Build all track geometry as merged buffers for performance
+    const asphaltVerts = [], asphaltIdx = [];
+    const curbRedVerts = [], curbRedIdx = [];
+    const curbWhiteVerts = [], curbWhiteIdx = [];
+    const centerVerts = [], centerIdx = [];
+    const grassVerts = [], grassIdx = [];
+
+    function addQuad(vertsArr, idxArr, p0, p1, p2, p3, yOff = 0) {
+      const base = vertsArr.length / 3;
+      vertsArr.push(
+        p0.x, p0.y + yOff, p0.z,
+        p2.x, p2.y + yOff, p2.z,
+        p1.x, p1.y + yOff, p1.z,
+        p3.x, p3.y + yOff, p3.z,
+      );
+      idxArr.push(base, base+1, base+2, base+2, base+1, base+3);
+    }
+
+    const up = new THREE.Vector3(0, 1, 0);
+    const half = TRACK_WIDTH / 2;
+    const CURB_W = 1.8;
+    const GRASS_W = 14;
 
     for (let i = 0; i < trackPoints.length - 1; i++) {
       const curr = trackPoints[i];
       const next = trackPoints[i + 1];
       const dir = new THREE.Vector3().subVectors(next, curr).normalize();
-      const up = new THREE.Vector3(0, 1, 0);
       const right = new THREE.Vector3().crossVectors(dir, up).normalize();
 
       const nextNext = trackPoints[Math.min(i + 2, trackPoints.length - 1)];
       const nextDir = new THREE.Vector3().subVectors(nextNext, next).normalize();
       const nextRight = new THREE.Vector3().crossVectors(nextDir, up).normalize();
 
-      const half = TRACK_WIDTH / 2;
-
-      const lc = curr.clone().add(right.clone().multiplyScalar(-half));
-      const rc = curr.clone().add(right.clone().multiplyScalar(half));
-      const ln = next.clone().add(nextRight.clone().multiplyScalar(-half));
-      const rn = next.clone().add(nextRight.clone().multiplyScalar(half));
-
-      // Checkerboard asphalt pattern
-      const isLight = Math.floor(i / 3) % 2 === 0;
-      const mat = isLight ? asphaltMat : asphaltLightMat;
-
-      const makeQuad = (p0, p1, p2, p3, m, yOff = 0.05) => {
-        // p0=leftCurr, p1=rightCurr, p2=leftNext, p3=rightNext
-        const geo = new THREE.BufferGeometry();
-        const verts = new Float32Array([
-          p0.x, p0.y + yOff, p0.z,
-          p2.x, p2.y + yOff, p2.z,
-          p1.x, p1.y + yOff, p1.z,
-          p1.x, p1.y + yOff, p1.z,
-          p2.x, p2.y + yOff, p2.z,
-          p3.x, p3.y + yOff, p3.z,
-        ]);
-        geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
-        geo.computeVertexNormals();
-        const mesh = new THREE.Mesh(geo, m);
-        mesh.receiveShadow = true;
-        return mesh;
-      };
+      const lc = curr.clone().addScaledVector(right, -half);
+      const rc = curr.clone().addScaledVector(right, half);
+      const ln = next.clone().addScaledVector(nextRight, -half);
+      const rn = next.clone().addScaledVector(nextRight, half);
 
       // Main asphalt
-      scene.add(makeQuad(lc, rc, ln, rn, mat));
+      addQuad(asphaltVerts, asphaltIdx, lc, rc, ln, rn, 0.05);
 
-      // Runoff areas (gravel/tarmac)
-      const lcOuter = lc.clone().add(right.clone().multiplyScalar(-RUNOFF));
-      const rcOuter = rc.clone().add(right.clone().multiplyScalar(RUNOFF));
-      const lnOuter = ln.clone().add(nextRight.clone().multiplyScalar(-RUNOFF));
-      const rnOuter = rn.clone().add(nextRight.clone().multiplyScalar(RUNOFF));
-      scene.add(makeQuad(lcOuter, lc, lnOuter, ln, runoffMat, 0.03));
-      scene.add(makeQuad(rc, rcOuter, rn, rnOuter, runoffMat, 0.03));
+      // Curbs (alternate red/white every 6 segments)
+      const isRed = Math.floor(i / 6) % 2 === 0;
+      const lcCurb = curr.clone().addScaledVector(right, -(half + CURB_W));
+      const rcCurb = curr.clone().addScaledVector(right, half + CURB_W);
+      const lnCurb = next.clone().addScaledVector(nextRight, -(half + CURB_W));
+      const rnCurb = next.clone().addScaledVector(nextRight, half + CURB_W);
+      if (isRed) {
+        addQuad(curbRedVerts, curbRedIdx, lcCurb, lc, lnCurb, ln, 0.06);
+        addQuad(curbRedVerts, curbRedIdx, rc, rcCurb, rn, rnCurb, 0.06);
+      } else {
+        addQuad(curbWhiteVerts, curbWhiteIdx, lcCurb, lc, lnCurb, ln, 0.06);
+        addQuad(curbWhiteVerts, curbWhiteIdx, rc, rcCurb, rn, rnCurb, 0.06);
+      }
 
-      // Red/white curbs
-      const curbW = 1.4;
-      const isRed = Math.floor(i / 5) % 2 === 0;
-      const curbM = isRed ? curbRedMat : curbWhiteMat;
-      const lcCurb = lc.clone().add(right.clone().multiplyScalar(-curbW));
-      const lnCurb = ln.clone().add(nextRight.clone().multiplyScalar(-curbW));
-      const rcCurb = rc.clone().add(right.clone().multiplyScalar(curbW));
-      const rnCurb = rn.clone().add(nextRight.clone().multiplyScalar(curbW));
-      scene.add(makeQuad(lcCurb, lc, lnCurb, ln, curbM, 0.1));
-      scene.add(makeQuad(rc, rcCurb, rn, rnCurb, curbM, 0.1));
+      // Grass beyond curbs
+      const lcGrass = curr.clone().addScaledVector(right, -(half + CURB_W + GRASS_W));
+      const rcGrass = curr.clone().addScaledVector(right, half + CURB_W + GRASS_W);
+      const lnGrass = next.clone().addScaledVector(nextRight, -(half + CURB_W + GRASS_W));
+      const rnGrass = next.clone().addScaledVector(nextRight, half + CURB_W + GRASS_W);
+      addQuad(grassVerts, grassIdx, lcGrass, lcCurb, lnGrass, lnCurb, 0.0);
+      addQuad(grassVerts, grassIdx, rcCurb, rcGrass, rnCurb, rnGrass, 0.0);
 
-      // Dashed center line every 20 segments
-      if (i % 20 < 10) {
-        const centerL = curr.clone().add(right.clone().multiplyScalar(-0.25));
-        const centerR = curr.clone().add(right.clone().multiplyScalar(0.25));
-        const centerLN = next.clone().add(nextRight.clone().multiplyScalar(-0.25));
-        const centerRN = next.clone().add(nextRight.clone().multiplyScalar(0.25));
-        scene.add(makeQuad(centerL, centerR, centerLN, centerRN, centerLineMat, 0.06));
+      // Dashed center line every 15 segments
+      if (i % 15 < 7) {
+        const cl = curr.clone().addScaledVector(right, -0.3);
+        const cr = curr.clone().addScaledVector(right, 0.3);
+        const nl = next.clone().addScaledVector(nextRight, -0.3);
+        const nr = next.clone().addScaledVector(nextRight, 0.3);
+        addQuad(centerVerts, centerIdx, cl, cr, nl, nr, 0.07);
       }
     }
 
-    // === ARMCO BARRIERS (realistic silver corrugated) ===
-    const armcoMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.3 });
-    const armcoPostMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.6, roughness: 0.4 });
-    const tireWallMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95, metalness: 0 });
-    const tireColorMats = [
-      new THREE.MeshStandardMaterial({ color: 0xff2200, roughness: 0.9 }),
-      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }),
-    ];
+    function buildMergedMesh(verts, idx, mat) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(verts), 3));
+      geo.setIndex(idx);
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.receiveShadow = true;
+      return mesh;
+    }
 
-    const barrierStep = 4;
+    scene.add(buildMergedMesh(asphaltVerts, asphaltIdx, asphaltMat));
+    scene.add(buildMergedMesh(curbRedVerts, curbRedIdx, curbRedMat));
+    scene.add(buildMergedMesh(curbWhiteVerts, curbWhiteIdx, curbWhiteMat));
+    scene.add(buildMergedMesh(centerVerts, centerIdx, centerLineMat));
+    scene.add(buildMergedMesh(grassVerts, grassIdx, grassMat));
+
+    // === ARMCO BARRIERS (only behind curbs, no obstacles on track) ===
+    const armcoMat = new THREE.MeshStandardMaterial({ color: 0xbbbbbb, metalness: 0.85, roughness: 0.25 });
+    const armcoPostMat = new THREE.MeshStandardMaterial({ color: 0x777777, metalness: 0.6, roughness: 0.4 });
+
+    const barrierStep = 6;
     for (let i = 0; i < trackPoints.length; i += barrierStep) {
       const curr = trackPoints[i];
       const next = trackPoints[(i + barrierStep) % trackPoints.length];
       const dir = new THREE.Vector3().subVectors(next, curr).normalize();
       const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
-
       const segLen = curr.distanceTo(next);
+      const barrierOffset = TRACK_WIDTH / 2 + CURB_W + 1.2;
 
       [-1, 1].forEach(side => {
-        const barrierOffset = side * (TRACK_WIDTH / 2 + 1.4 + RUNOFF);
-        const pos = curr.clone().add(right.clone().multiplyScalar(barrierOffset));
-
-        // Armco beam
-        const beamGeo = new THREE.BoxGeometry(0.1, 0.32, segLen + 0.3);
-        const beam = new THREE.Mesh(beamGeo, armcoMat);
-        beam.position.set(pos.x, pos.y + 0.55, pos.z);
-        beam.lookAt(next.x, pos.y + 0.55, next.z);
-        beam.castShadow = true;
+        const pos = curr.clone().addScaledVector(right, side * barrierOffset);
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.35, segLen + 0.5), armcoMat);
+        beam.position.set(pos.x, pos.y + 0.5, pos.z);
+        beam.lookAt(next.x, pos.y + 0.5, next.z);
         scene.add(beam);
-
-        // Second rail
         const beam2 = beam.clone();
-        beam2.position.y += 0.38;
+        beam2.position.y += 0.4;
         scene.add(beam2);
-
-        // Post every 8 segments
-        if (i % 8 === 0) {
-          const postGeo = new THREE.BoxGeometry(0.08, 0.95, 0.08);
-          const post = new THREE.Mesh(postGeo, armcoPostMat);
-          post.position.set(pos.x, pos.y + 0.47, pos.z);
-          post.castShadow = true;
+        if (i % 12 === 0) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.0, 0.1), armcoPostMat);
+          post.position.set(pos.x, pos.y + 0.5, pos.z);
           scene.add(post);
-
-          // Tire stack at corners/chicanes every ~50 pts
-          if (i % 50 === 0) {
-            for (let tr = 0; tr < 2; tr++) {
-              for (let tc = 0; tc < 3; tc++) {
-                const tireGeo = new THREE.TorusGeometry(0.45, 0.18, 8, 14);
-                const tireMesh = new THREE.Mesh(tireGeo, tc % 2 === 0 ? tireColorMats[0] : tireColorMats[1]);
-                tireMesh.position.set(pos.x + dir.x * tc * 1.0, pos.y + 0.45 + tr * 0.95, pos.z + dir.z * tc * 1.0);
-                tireMesh.rotation.x = Math.PI / 2;
-                tireMesh.castShadow = true;
-                scene.add(tireMesh);
-              }
-            }
-          }
         }
       });
     }
