@@ -534,24 +534,25 @@ function createSportsCar(color, style) {
 
 function createItemBox(position) {
   const group = new THREE.Group();
-  const geo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
-  const mat = new THREE.MeshPhongMaterial({
+  // Flat disc on the track surface — easy to drive over, not an obstacle
+  const geo = new THREE.CylinderGeometry(1.2, 1.2, 0.12, 16);
+  const mat = new THREE.MeshStandardMaterial({
     color: 0xffcc00,
-    emissive: 0xff8800,
-    emissiveIntensity: 0.4,
-    transparent: true,
-    opacity: 0.85,
-    shininess: 150
+    emissive: 0xffaa00,
+    emissiveIntensity: 0.6,
+    roughness: 0.3,
+    metalness: 0.5,
   });
   const box = new THREE.Mesh(geo, mat);
   box.position.copy(position);
-  box.position.y += 2;
   group.add(box);
 
-  const ringGeo = new THREE.TorusGeometry(1.1, 0.06, 6, 24);
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+  // Glowing ring around it
+  const ringGeo = new THREE.TorusGeometry(1.3, 0.07, 6, 24);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
   const ring = new THREE.Mesh(ringGeo, ringMat);
-  ring.position.copy(box.position);
+  ring.position.copy(position);
+  ring.rotation.x = Math.PI / 2;
   group.add(ring);
 
   group.userData = { active: true, respawnTimer: 0 };
