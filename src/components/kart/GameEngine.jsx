@@ -728,10 +728,13 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         ai.mesh.rotateY(Math.PI);
       });
 
-      // Position calc
-      const all=[{t:ps.trackT,lap:ps.lap,isPlayer:true},...aiKarts.map(a=>({t:a.trackT,lap:a.lap,isPlayer:false}))];
-      all.sort((a,b)=>(b.lap+b.t)-(a.lap+a.t));
-      ps.position=all.findIndex(r=>r.isPlayer)+1;
+      // Position calc — sort by total progress (lap + fractional T)
+      const all = [
+        { progress: ps.lap + ps.trackT, isPlayer: true },
+        ...aiKarts.map(a => ({ progress: a.lap + a.trackT, isPlayer: false }))
+      ];
+      all.sort((a, b) => b.progress - a.progress);
+      ps.position = all.findIndex(r => r.isPlayer) + 1;
 
       // Camera
       const camBack = pDir.clone().multiplyScalar(-10); camBack.y=5.5;
