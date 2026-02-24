@@ -187,6 +187,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
     const trackCurve = createTrackPath();
     const trackPoints = trackCurve.getPoints(2400);
+    let trackLengthWorld = 0;
+    for (let i = 0; i < trackPoints.length - 1; i++) trackLengthWorld += trackPoints[i].distanceTo(trackPoints[i + 1]);
+    const FPS = 60;
+    const speedMaxKmh = Math.round(trackLengthWorld * physics.speedMax * TRACK_SCALE * FPS * 3.6);
 
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(12000, 12000),
@@ -821,7 +825,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
       if (onGameState) {
         onGameState({
-          speed: Math.abs(ps.speed/physics.speedMax*300).toFixed(0),
+          speed: Math.abs(ps.speed / physics.speedMax * speedMaxKmh).toFixed(0),
+          speedMaxKmh,
           lap: Math.min(ps.lap+1,LAPS_TO_WIN),
           totalLaps: LAPS_TO_WIN,
           position: ps.position,

@@ -56,8 +56,8 @@ function Timer({ raceTime }) {
   );
 }
 
-function SpeedoArc({ speed, boost }) {
-  const MAX = 120;
+function SpeedoArc({ speed, boost, maxSpeed = 120 }) {
+  const MAX = maxSpeed;
   const pct = Math.min(speed / MAX, 1);
   const R = 48, CX = 56, CY = 56;
   const startAngle = 140;
@@ -233,7 +233,7 @@ function Minimap({ playerT, aiPositions }) {
 
 export default function RaceHUD({ gameState, onBackToMenu }) {
   if (!gameState) return null;
-  const { speed, lap, totalLaps, position, totalRacers, hasItem, boost, countdown, redLightsOn, lightsOut, goVisible, raceTime, finished, finishTime, playerTrackT, aiPositions, damaged, inPit } = gameState;
+  const { speed, lap, totalLaps, position, totalRacers, hasItem, boost, countdown, redLightsOn, lightsOut, goVisible, raceTime, finished, finishTime, playerTrackT, aiPositions, damaged, inPit, speedMaxKmh } = gameState;
 
   return (
     <div className="absolute inset-0 pointer-events-none select-none" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -294,7 +294,7 @@ export default function RaceHUD({ gameState, onBackToMenu }) {
       {/* ── BOTTOM BAR ── */}
       <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-3 gap-3">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <SpeedoArc speed={parseInt(speed) || 0} boost={boost} />
+          <SpeedoArc speed={parseInt(speed) || 0} boost={boost} maxSpeed={speedMaxKmh ?? 120} />
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mb-1">
