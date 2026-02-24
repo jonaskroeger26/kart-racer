@@ -593,25 +593,77 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const aiKarts = [];
 
     // AI top speed in same units as player (physics.speedMax scale)
-    // diff.aiSpeed is a 0-1 multiplier, so scale it to match player speedMax
     const aiBaseSpeed = physics.speedMax * diff.aiSpeed;
+
+    // Optimal racing line offsets per track-T zone (apex inside, entry/exit outside)
+    // Each entry: [tStart, tEnd, apexOffset] — offset in track-width units (-1=left edge, +1=right edge)
+    const racingLineZones = [
+      // Main straight — stay centre-right
+      { s: 0.00, e: 0.08, apex: 3 },
+      // T1 braking / entry — wide left
+      { s: 0.08, e: 0.12, apex: -5 },
+      // T1 apex — cut right
+      { s: 0.12, e: 0.18, apex: 6 },
+      // T1 exit — open left
+      { s: 0.18, e: 0.22, apex: -4 },
+      // Esses — alternate
+      { s: 0.22, e: 0.28, apex: 4 },
+      { s: 0.28, e: 0.32, apex: -4 },
+      // T4 sweep — wide right, apex left
+      { s: 0.32, e: 0.38, apex: -5 },
+      { s: 0.38, e: 0.42, apex: 5 },
+      // Back straight — centre
+      { s: 0.42, e: 0.55, apex: 0 },
+      // Hairpin entry — wide right
+      { s: 0.55, e: 0.60, apex: 5 },
+      // Hairpin apex — cut hard left
+      { s: 0.60, e: 0.66, apex: -6 },
+      // Hairpin exit — sweep right
+      { s: 0.66, e: 0.72, apex: 5 },
+      // Twisty return
+      { s: 0.72, e: 0.78, apex: -4 },
+      { s: 0.78, e: 0.84, apex: 4 },
+      // Return straight
+      { s: 0.84, e: 1.00, apex: 0 },
+    ];
+
+    function getRacingLineOffset(t) {
+      for (const z of racingLineZones) {
+        if (t >= z.s && t < z.e) return z.apex;
+      }
+      return 0;
+    }
+
+    // AI personalities
+    const personalities = [
+      { name: 'aggressive', rbStrength: 0.055, rbCap: 0.22, topSpeedMult: 1.06, racingLineFidelity: 0.7, itemUseGap: 0.04, laneWander: 0.02 },
+      { name: 'defensive',  rbStrength: 0.030, rbCap: 0.12, topSpeedMult: 0.96, racingLineFidelity: 0.95, itemUseGap: 0.08, laneWander: 0.01 },
+      { name: 'consistent', rbStrength: 0.040, rbCap: 0.16, topSpeedMult: 1.00, racingLineFidelity: 0.88, itemUseGap: 0.06, laneWander: 0.015 },
+      { name: 'erratic',    rbStrength: 0.060, rbCap: 0.20, topSpeedMult: 1.02, racingLineFidelity: 0.55, itemUseGap: 0.02, laneWander: 0.04 },
+    ];
 
     for (let i = 0; i < NUM_AI; i++) {
       const car = createF1Car(aiColors[i]);
       scene.add(car);
-      // Start staggered BEHIND the player (player starts at T=0, AI behind = small negative T wrapped)
-      const startT = Math.max(0, (i + 1) * 0.012); // slightly ahead in T so they appear behind visually on track
-      // Give each AI a slightly different top speed for variety
-      const topSpeed = aiBaseSpeed * (0.93 + Math.random() * 0.14);
+      const startT = (i + 1) * 0.012;
+      const personality = personalities[i % personalities.length];
+      const topSpeed = aiBaseSpeed * personality.topSpeedMult * (0.95 + Math.random() * 0.10);
       aiKarts.push({
         mesh: car,
         trackT: startT,
         lastT: startT,
-        speed: topSpeed,
+        speed: topSpeed * 0.3,
         topSpeed,
-        offset: (i % 2 === 0 ? 1 : -1) * (2.5 + (i % 3) * 1.5),
+        offset: (i % 2 === 0 ? 1 : -1) * (2 + (i % 3) * 1.2),
+        targetOffset: 0,
         lap: 0,
         wobble: Math.random() * Math.PI * 2,
+        personality,
+        hasItem: false,
+        itemCooldown: 0,
+        // Rubber-band noise phase — each AI has unique phase so they don't pulse together
+        rbPhase: Math.random() * Math.PI * 2,
+        rbNoiseT: 0,
       });
     }
 
