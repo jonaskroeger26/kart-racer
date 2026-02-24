@@ -425,7 +425,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     scene.add(new THREE.HemisphereLight(0x87ceeb, 0x4a8c2a, 0.5));
 
     const trackCurve = createTrackPath();
-    const trackPoints = trackCurve.getPoints(1400);
+    const trackPoints = trackCurve.getPoints(2400);
 
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(2000, 2000),
