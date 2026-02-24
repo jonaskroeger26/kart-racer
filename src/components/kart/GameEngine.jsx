@@ -401,21 +401,26 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const trackCurve = createTrackPath();
     const trackPoints = trackCurve.getPoints(1400);
 
-    // Flat green ground
+    // Ground (grass) – dark green so asphalt stands out
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(2000, 2000),
-      new THREE.MeshStandardMaterial({ color: 0x4a9e2a, roughness: 0.9, metalness: 0 })
+      new THREE.MeshStandardMaterial({ color: 0x2d5a1e, roughness: 0.95, metalness: 0 })
     );
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.05;
+    ground.position.y = -0.08;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // ── TRACK SURFACE (merged geometry for performance) ──
-    const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x282828, roughness: 0.88, metalness: 0.04 });
+    // ── TRACK SURFACE – clear asphalt (dark tarmac), raised above grass ──
+    const ASPHALT_Y = 0.08;
+    const asphaltMat = new THREE.MeshStandardMaterial({
+      color: 0x1a1a1a,
+      roughness: 0.92,
+      metalness: 0.02,
+    });
     const curbRedMat  = new THREE.MeshStandardMaterial({ color: 0xdd1111, roughness: 0.5, metalness: 0 });
     const curbWhtMat  = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0 });
-    const grassMat    = new THREE.MeshStandardMaterial({ color: 0x3a8c1a, roughness: 0.95, metalness: 0 });
+    const grassMat    = new THREE.MeshStandardMaterial({ color: 0x2a6b1a, roughness: 0.95, metalness: 0 });
     const whiteMat    = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0, emissive: 0xffffff, emissiveIntensity: 0.1 });
 
     const aV=[], aI=[], crV=[], crI=[], cwV=[], cwI=[], gV=[], gI=[], wV=[], wI=[];
@@ -447,21 +452,21 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const ln = next.clone().addScaledVector(nRight, -half);
       const rn = next.clone().addScaledVector(nRight,  half);
 
-      // Asphalt
-      addQuad(aV, aI, lc, rc, ln, rn, 0.04);
+      // Asphalt (tarmac) – raised so it clearly sits on top of grass
+      addQuad(aV, aI, lc, rc, ln, rn, ASPHALT_Y);
 
       // White edge lines (inside curb)
       const lwlc = curr.clone().addScaledVector(right, -half);
       const lwrc = curr.clone().addScaledVector(right, -(half - WLINE));
       const lwln = next.clone().addScaledVector(nRight, -half);
       const lwrn = next.clone().addScaledVector(nRight, -(half - WLINE));
-      addQuad(wV, wI, lwlc, lwrc, lwln, lwrn, 0.05);
+      addQuad(wV, wI, lwlc, lwrc, lwln, lwrn, ASPHALT_Y + 0.01);
 
       const rwlc = curr.clone().addScaledVector(right, half - WLINE);
       const rwrc = curr.clone().addScaledVector(right,  half);
       const rwln = next.clone().addScaledVector(nRight, half - WLINE);
       const rwrn = next.clone().addScaledVector(nRight,  half);
-      addQuad(wV, wI, rwlc, rwrc, rwln, rwrn, 0.05);
+      addQuad(wV, wI, rwlc, rwrc, rwln, rwrn, ASPHALT_Y + 0.01);
 
       // Curbs — alternating red/white every 3 segments
       const isRed = Math.floor(i / 3) % 2 === 0;
@@ -471,8 +476,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const rnC = next.clone().addScaledVector(nRight,  half + CURB);
       const cV = isRed ? crV : cwV;
       const cI = isRed ? crI : cwI;
-      addQuad(cV, cI, lcC, lc, lnC, ln, 0.05);
-      addQuad(cV, cI, rc, rcC, rn, rnC, 0.05);
+      addQuad(cV, cI, lcC, lc, lnC, ln, ASPHALT_Y + 0.01);
+      addQuad(cV, cI, rc, rcC, rn, rnC, ASPHALT_Y + 0.01);
 
       // Grass runoff
       const lcG = curr.clone().addScaledVector(right, -(half + CURB + GRASS_W));
@@ -488,25 +493,27 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         const cr = curr.clone().addScaledVector(right,  0.28);
         const nl = next.clone().addScaledVector(nRight, -0.28);
         const nr = next.clone().addScaledVector(nRight,  0.28);
-        addQuad(wV, wI, cl, cr, nl, nr, 0.06);
+        addQuad(wV, wI, cl, cr, nl, nr, ASPHALT_Y + 0.02);
       }
     }
 
-    function buildMesh(verts, idx, mat) {
+    function buildMesh(verts, idx, mat, order = 0) {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(verts), 3));
       geo.setIndex(idx);
       geo.computeVertexNormals();
       const m = new THREE.Mesh(geo, mat);
       m.receiveShadow = true;
+      m.renderOrder = order;
       return m;
     }
 
-    scene.add(buildMesh(aV,  aI,  asphaltMat));
-    scene.add(buildMesh(crV, crI, curbRedMat));
-    scene.add(buildMesh(cwV, cwI, curbWhtMat));
-    scene.add(buildMesh(gV,  gI,  grassMat));
-    scene.add(buildMesh(wV,  wI,  whiteMat));
+    const asphaltMesh = buildMesh(aV, aI, asphaltMat, 1);
+    scene.add(asphaltMesh);
+    scene.add(buildMesh(crV, crI, curbRedMat, 1));
+    scene.add(buildMesh(cwV, cwI, curbWhtMat, 1));
+    scene.add(buildMesh(gV,  gI,  grassMat, 0));
+    scene.add(buildMesh(wV,  wI,  whiteMat, 2));
 
     // ── ARMCO BARRIERS ──
     const armcoMat  = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.8, roughness: 0.3 });
