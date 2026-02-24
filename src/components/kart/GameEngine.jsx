@@ -940,7 +940,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     // Pit lane building
     const pitGeo = new THREE.BoxGeometry(50, 5, 12);
     const pitMat = new THREE.MeshStandardMaterial({ color: 0x333344, roughness: 0.8, metalness: 0.3 });
-    const pitPos = startPos.clone().add(startRight.clone().multiplyScalar(TRACK_WIDTH / 2 + RUNOFF + 20));
+    const pitPos = startPos.clone().add(startRight.clone().multiplyScalar(TRACK_WIDTH / 2 + CURB_W + 22));
     pitPos.add(startTang.clone().multiplyScalar(-15));
     pitPos.y += 2.5;
     const pit = new THREE.Mesh(pitGeo, pitMat);
