@@ -677,14 +677,15 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const grassVerts = [], grassIdx = [];
 
     function addQuad(vertsArr, idxArr, p0, p1, p2, p3, yOff = 0) {
+      // p0=left-curr, p1=right-curr, p2=left-next, p3=right-next
       const base = vertsArr.length / 3;
       vertsArr.push(
         p0.x, p0.y + yOff, p0.z,
-        p2.x, p2.y + yOff, p2.z,
         p1.x, p1.y + yOff, p1.z,
+        p2.x, p2.y + yOff, p2.z,
         p3.x, p3.y + yOff, p3.z,
       );
-      idxArr.push(base, base+1, base+2, base+2, base+1, base+3);
+      idxArr.push(base, base+2, base+1, base+1, base+2, base+3);
     }
 
     const up = new THREE.Vector3(0, 1, 0);
