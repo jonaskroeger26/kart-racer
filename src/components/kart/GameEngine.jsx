@@ -643,14 +643,19 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
       if (raceStarted && !ps.finished) {
         const keys = keysRef.current;
-        const SPEED_MAX = physics.speedMax * (ps.boost > 0 ? 1.4 : 1);
+        const boostMult = ps.boost > 0 ? 1.35 : 1;
+        const SPEED_MAX = physics.speedMax * boostMult;
+
         if (keys['ArrowUp'] || keys['KeyW']) {
-          // Lerp toward top speed — feels like realistic acceleration curve
-          ps.speed += (SPEED_MAX - ps.speed) * physics.accel;
+          // Physics: thrust - aerodynamic drag (drag ∝ v²), capped at speedMax
+          // This gives F1-like curve: fast early, tapers at high speed
+          const drag = physics.drag * ps.speed * ps.speed;
+          const thrust = physics.thrust * boostMult;
+          ps.speed = Math.min(SPEED_MAX, ps.speed + thrust - drag);
         } else if (keys['ArrowDown'] || keys['KeyS']) {
-          ps.speed = Math.max(-20, ps.speed - physics.braking);
+          ps.speed = Math.max(-30, ps.speed - physics.braking);
         } else {
-          // Coast / engine braking
+          // Engine braking / coast — gentle deceleration
           ps.speed = Math.max(0, ps.speed - physics.friction);
         }
 
