@@ -725,7 +725,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
           ai.lastT = ai.trackT;
           // Use same step formula as player: speed * 0.000018
-          const step = (ai.speed + variation) * 0.000018;
+          const step = (ai.speed + variation) * TRACK_SCALE;
           ai.trackT = (ai.trackT + step + 1) % 1;
 
           // Lap crossing: T goes from near 1 to near 0
