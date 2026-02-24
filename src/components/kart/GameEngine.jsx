@@ -14,33 +14,22 @@ const PIT_ZONE_T_START = 0.96;
 const PIT_ZONE_T_END = 0.04;
 const PIT_STOP_DURATION_SEC = 2.5;
 
-// F1-style circuit: main straight, heavy T1, esses, back straight, hairpin, twisty return
 function createTrackPath() {
   const pts = [
-    // Start/Finish straight (long main straight)
     [0, 0, 0], [0, 0, -20], [0, 0, -45], [0, 0, -70], [0, 0, -95], [0, 0, -120], [0, 0, -145],
-    // Turn 1 (sharp right, heavy braking zone)
     [25, 0, -165], [60, 0, -178], [100, 0, -182], [145, 0, -172], [185, 0, -152],
-    // Turn 2–3 (fast sweep right then left)
     [218, 0, -120], [240, 0, -80], [248, 0, -40], [242, 0, 0],
-    // Turn 4 (left-hand sweep)
     [222, 0, 35], [190, 0, 62], [150, 0, 80], [105, 0, 90],
-    // Back straight
     [55, 0, 92], [0, 0, 90], [-55, 0, 92], [-105, 0, 90],
-    // Hairpin (tight left)
     [-150, 0, 80], [-188, 0, 58], [-212, 0, 25], [-220, 0, -15], [-212, 0, -55],
-    // Turn 7–8 (right then left, twisty section)
     [-188, 0, -88], [-152, 0, -108], [-108, 0, -118], [-60, 0, -122], [-25, 0, -120],
-    // Return to main straight
     [0, 0, -118], [0, 0, -90], [0, 0, -55], [0, 0, -25], [0, 0, 0],
   ];
   return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.4);
 }
 
-// ── F1 Car builder (realistic proportions & details) ────────────────────────
 function createF1Car(color) {
   const g = new THREE.Group();
-
   const paint = new THREE.MeshStandardMaterial({ color, metalness: 0.55, roughness: 0.28 });
   const carbon = new THREE.MeshStandardMaterial({ color: 0x0d0d0d, metalness: 0.35, roughness: 0.55 });
   const black = new THREE.MeshStandardMaterial({ color: 0x060606, roughness: 0.92, metalness: 0 });
@@ -49,28 +38,23 @@ function createF1Car(color) {
   const darkCarbon = new THREE.MeshStandardMaterial({ color: 0x151515, metalness: 0.45, roughness: 0.5 });
   const accent = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.6, roughness: 0.25 });
 
-  // ── NOSE / MONOCOQUE ──
   const noseGeo = new THREE.CylinderGeometry(0.07, 0.28, 1.85, 8);
   const nose = new THREE.Mesh(noseGeo, paint);
   nose.rotation.z = Math.PI / 2;
   nose.position.set(0, 0.2, -2.12);
   g.add(nose);
-  // Nose tip
   const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), paint);
   noseTip.position.set(0, 0.2, -2.58);
   g.add(noseTip);
 
-  // Front wing main plane
   const fwMain = new THREE.Mesh(new THREE.BoxGeometry(2.85, 0.055, 0.5), paint);
   fwMain.position.set(0, 0.07, -2.58);
   g.add(fwMain);
-  // Front wing endplates
   [-1.38, 1.38].forEach(x => {
     const ep = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.24, 0.5), paint);
     ep.position.set(x, 0.19, -2.58);
     g.add(ep);
   });
-  // Front wing flaps (two elements)
   const fwFlap1 = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.032, 0.2), carbon);
   fwFlap1.position.set(0, 0.12, -2.48);
   g.add(fwFlap1);
@@ -78,7 +62,6 @@ function createF1Car(color) {
   fwFlap2.position.set(0, 0.155, -2.42);
   g.add(fwFlap2);
 
-  // ── SIDEPODS ──
   [-1, 1].forEach(s => {
     const pod = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.36, 1.55), paint);
     pod.position.set(s * 0.72, 0.36, 0.2);
@@ -88,7 +71,6 @@ function createF1Car(color) {
     g.add(inlet);
   });
 
-  // ── BARGEBOARDS (between front wheel and sidepod) ──
   [-1, 1].forEach(s => {
     const barge = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.35, 0.7), carbon);
     barge.position.set(s * 0.58, 0.25, -0.5);
@@ -100,22 +82,17 @@ function createF1Car(color) {
     g.add(barge2);
   });
 
-  // ── CHASSIS / COCKPIT ──
   const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.42, 2.6), paint);
   chassis.position.set(0, 0.42, 0.0);
   g.add(chassis);
-
-  // Cockpit surround (raised halo area)
   const cockpitSurround = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.18, 0.7), darkCarbon);
   cockpitSurround.position.set(0, 0.65, -0.3);
   g.add(cockpitSurround);
 
-  // HALO
   const haloBar = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.95, 8), carbon);
   haloBar.rotation.z = Math.PI / 2;
   haloBar.position.set(0, 0.98, -0.18);
   g.add(haloBar);
-  // Halo legs
   [-0.35, 0.35].forEach(x => {
     const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.42, 6), carbon);
     leg.position.set(x, 0.78, -0.18);
@@ -126,61 +103,48 @@ function createF1Car(color) {
   haloCenter.rotation.x = 0.4;
   g.add(haloCenter);
 
-  // Helmet
   const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.3, roughness: 0.4 }));
   helmet.scale.set(1, 0.88, 1.1);
   helmet.position.set(0, 0.82, -0.28);
   g.add(helmet);
-  // Visor
   const visor = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), new THREE.MeshStandardMaterial({ color: 0x331100, metalness: 0.8, roughness: 0.1, transparent: true, opacity: 0.85 }));
   visor.scale.set(1, 0.6, 0.55);
   visor.position.set(0, 0.81, -0.44);
   g.add(visor);
 
-  // ── ENGINE COVER / AIRBOX ──
   const airbox = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.14, 0.55, 8), paint);
   airbox.position.set(0, 0.88, 0.35);
   g.add(airbox);
-
-  // Engine cover (tapers to rear)
   const engineCover = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.26, 1.18), paint);
   engineCover.position.set(0, 0.7, 0.85);
   g.add(engineCover);
-  // Livery stripe (center stripe along engine cover)
   const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 1.35), accent);
   stripe.position.set(0, 0.82, 0.8);
   g.add(stripe);
 
-  // ── REAR WING ──
   const rwMainPlane = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.07, 0.38), paint);
   rwMainPlane.position.set(0, 0.98, 1.72);
   g.add(rwMainPlane);
   const rwFlap = new THREE.Mesh(new THREE.BoxGeometry(1.88, 0.05, 0.22), carbon);
   rwFlap.position.set(0, 1.06, 1.58);
   g.add(rwFlap);
-  // endplates
   [-0.98, 0.98].forEach(x => {
     const ep = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.55, 0.42), paint);
     ep.position.set(x, 0.82, 1.72);
     g.add(ep);
   });
-  // rear wing posts
   [-0.3, 0.3].forEach(x => {
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.48, 0.06), carbon);
     post.position.set(x, 0.74, 1.72);
     g.add(post);
   });
-
-  // DRS beam wing
   const beam = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.04, 0.14), carbon);
   beam.position.set(0, 0.62, 1.68);
   g.add(beam);
 
-  // ── FLOOR & DIFFUSER ──
   const floor = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.04, 3.8), carbon);
   floor.position.set(0, 0.06, 0.0);
   g.add(floor);
-
   const diffuser = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.22, 0.6), darkCarbon);
   diffuser.position.set(0, 0.14, 1.85);
   diffuser.rotation.x = 0.3;
@@ -191,14 +155,11 @@ function createF1Car(color) {
     g.add(fin);
   }
 
-  // ── EXHAUST ──
   const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.22, 8), silver);
   exhaust.rotation.x = Math.PI / 2;
   exhaust.position.set(0.18, 0.55, 1.78);
   g.add(exhaust);
 
-  // ── SUSPENSION / WISHBONES (visual only) ──
-  // Front upper wishbone
   [-1, 1].forEach(s => {
     const wb = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 5), carbon);
     wb.rotation.z = Math.PI / 2;
@@ -210,20 +171,16 @@ function createF1Car(color) {
     g.add(wbr);
   });
 
-  // ── WHEELS (wide F1 style) ──
   const wheelData = [
     { x: -1.08, y: 0.31, z: -1.38, front: true },
     { x:  1.08, y: 0.31, z: -1.38, front: true },
     { x: -1.12, y: 0.31, z:  1.38, front: false },
     { x:  1.12, y: 0.31, z:  1.38, front: false },
   ];
-
   wheelData.forEach(({ x, y, z, front }) => {
     const wg = new THREE.Group();
     const r = front ? 0.30 : 0.33;
     const w = front ? 0.30 : 0.40;
-
-    // Tire (torus-like via lathe)
     const tirePts = [];
     for (let i = 0; i <= 20; i++) {
       const a = (i / 20) * Math.PI * 2;
@@ -232,36 +189,27 @@ function createF1Car(color) {
     const tire = new THREE.Mesh(new THREE.LatheGeometry(tirePts, 24), rubber);
     tire.rotation.z = Math.PI / 2;
     wg.add(tire);
-
-    // Rim
     const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.72, r * 0.72, w * 0.55, 12), silver);
     rim.rotation.z = Math.PI / 2;
     wg.add(rim);
-
-    // Center lock nut
     const nut = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.15, r * 0.15, w * 0.65, 6), new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 1, roughness: 0.1 }));
     nut.rotation.z = Math.PI / 2;
     wg.add(nut);
-
-    // Spokes
     for (let i = 0; i < 5; i++) {
       const a = (i / 5) * Math.PI * 2;
       const spoke = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, r * 0.1, r * 0.6), silver);
       spoke.rotation.set(0, 0, a);
       wg.add(spoke);
     }
-
     wg.position.set(x, y, z);
     g.add(wg);
-
-    // Brake duct
     const duct = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.62, r * 0.62, 0.06, 12), carbon);
     duct.rotation.z = Math.PI / 2;
     duct.position.set(x, y, z);
     g.add(duct);
   });
 
-  g.scale.setScalar(2.25); // match visual size to scaled RB21
+  g.scale.setScalar(2.25);
   return g;
 }
 
@@ -281,7 +229,6 @@ function createItemBox(position) {
   return group;
 }
 
-// Load Red Bull RB21 GLB and scale/orient to match game
 const RB21_MODEL_URL = '/models/rb21.glb';
 function loadRB21Car() {
   return new Promise((resolve, reject) => {
@@ -300,7 +247,7 @@ function loadRB21Car() {
         const size = new THREE.Vector3();
         box.getSize(size);
         const maxDim = Math.max(size.x, size.y, size.z);
-        const targetSize = 9; // car size on track (was 4 – scale up so they don’t look like toys)
+        const targetSize = 9;
         const scale = targetSize / maxDim;
         model.scale.setScalar(scale);
         model.rotation.y = Math.PI;
@@ -315,7 +262,6 @@ function loadRB21Car() {
   });
 }
 
-// Clone RB21 and apply a livery color (so each AI has a distinct team look)
 function cloneRB21WithLiveryColor({ model }, colorHex) {
   const clone = model.clone(true);
   clone.traverse((child) => {
@@ -347,7 +293,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
   const initGame = useCallback(() => {
     if (!mountRef.current) return;
     const container = mountRef.current;
-    // Wait a frame to ensure the container is in the DOM and has dimensions
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
 
@@ -358,17 +303,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
-    // Speed is stored in km/h. Track step per frame = speed * TRACK_SCALE.
-    // TRACK_SCALE tuned so 300 km/h feels like real racing pace on this circuit.
-    // Real F1 accel: 0→100 in ~2.5s (150 frames), 0→300 in ~9s (540 frames).
-    // Thrust-drag model: dV = thrust - drag*V^2  per frame.
-    // At terminal (300 km/h): thrust = drag * 300^2  →  drag = thrust / 90000
-    // For 0→100 in 150 frames: roughly thrust ≈ 1.3 km/h/frame early on.
-    // thrust=1.35, drag=1.35/90000=0.000015 → terminal ~300 km/h, ~2.5s to 100 ✓
-    const TRACK_SCALE = 0.000006; // trackT units per km/h per frame
+    const TRACK_SCALE = 0.000006;
 
     const kartPhysics = {
-      //               thrust   drag         turn    friction  braking  speedMax
       speeder:  { thrust: 1.45, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 28, speedMax: diff.speedMax * 1.08 },
       balanced: { thrust: 1.35, drag: 0.0000150, turn: 0.060, friction: 0.7, braking: 25, speedMax: diff.speedMax },
       heavy:    { thrust: 1.20, drag: 0.0000148, turn: 0.045, friction: 0.55, braking: 22, speedMax: diff.speedMax * 0.92 },
@@ -376,7 +313,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     const physics = kartPhysics[kartType] || kartPhysics.balanced;
 
-    // ── SCENE ──
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
     scene.fog = new THREE.Fog(0xb0d8f0, 200, 600);
@@ -392,7 +328,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     renderer.toneMappingExposure = 1.1;
     container.appendChild(renderer.domElement);
 
-    // ── LIGHTING ──
     scene.add(new THREE.AmbientLight(0xffffff, 1.0));
     const sun = new THREE.DirectionalLight(0xfff8e8, 2.2);
     sun.position.set(120, 220, 80);
@@ -405,11 +340,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     scene.add(new THREE.DirectionalLight(0xc8e0ff, 0.7).position.set(-80, 60, -60) && new THREE.DirectionalLight(0xc8e0ff, 0.7));
     scene.add(new THREE.HemisphereLight(0x87ceeb, 0x4a8c2a, 0.5));
 
-    // ── TRACK ──
     const trackCurve = createTrackPath();
     const trackPoints = trackCurve.getPoints(1400);
 
-    // Ground (grass) – dark green so asphalt stands out
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(2000, 2000),
       new THREE.MeshStandardMaterial({ color: 0x2d5a1e, roughness: 0.95, metalness: 0 })
@@ -419,14 +352,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // ── TRACK SURFACE – clear asphalt (dark tarmac), raised above grass ──
     const ASPHALT_Y = 0.12;
-    const asphaltMat = new THREE.MeshStandardMaterial({
-      color: 0x2a2a2a,
-      roughness: 0.9,
-      metalness: 0.03,
-      side: THREE.DoubleSide,
-    });
+    const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9, metalness: 0.03, side: THREE.DoubleSide });
     const curbRedMat  = new THREE.MeshStandardMaterial({ color: 0xdd1111, roughness: 0.5, metalness: 0 });
     const curbWhtMat  = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0 });
     const grassMat    = new THREE.MeshStandardMaterial({ color: 0x2a6b1a, roughness: 0.95, metalness: 0 });
@@ -434,7 +361,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
     const aV=[], aI=[], crV=[], crI=[], cwV=[], cwI=[], gV=[], gI=[], wV=[], wI=[];
 
-    // Quads: p0=leftCurr, p1=rightCurr, p2=leftNext, p3=rightNext. Wind so normal points UP (visible from above).
     function addQuad(vA, iA, p0, p1, p2, p3, yOff=0) {
       const b = vA.length / 3;
       vA.push(p0.x,p0.y+yOff,p0.z, p1.x,p1.y+yOff,p1.z, p2.x,p2.y+yOff,p2.z, p3.x,p3.y+yOff,p3.z);
@@ -445,7 +371,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const half = TRACK_WIDTH / 2;
     const CURB = 1.6;
     const GRASS_W = 18;
-    const WLINE = 0.35; // white edge line width
+    const WLINE = 0.35;
 
     for (let i = 0; i < trackPoints.length - 1; i++) {
       const curr = trackPoints[i];
@@ -456,16 +382,13 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const nDir = new THREE.Vector3().subVectors(nn, next).normalize();
       const nRight = new THREE.Vector3().crossVectors(nDir, up).normalize();
 
-      // Track edge points
       const lc = curr.clone().addScaledVector(right, -half);
       const rc = curr.clone().addScaledVector(right,  half);
       const ln = next.clone().addScaledVector(nRight, -half);
       const rn = next.clone().addScaledVector(nRight,  half);
 
-      // Asphalt (tarmac) – raised so it clearly sits on top of grass
       addQuad(aV, aI, lc, rc, ln, rn, ASPHALT_Y);
 
-      // White edge lines (inside curb)
       const lwlc = curr.clone().addScaledVector(right, -half);
       const lwrc = curr.clone().addScaledVector(right, -(half - WLINE));
       const lwln = next.clone().addScaledVector(nRight, -half);
@@ -478,7 +401,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const rwrn = next.clone().addScaledVector(nRight,  half);
       addQuad(wV, wI, rwlc, rwrc, rwln, rwrn, ASPHALT_Y + 0.01);
 
-      // Curbs — alternating red/white every 3 segments
       const isRed = Math.floor(i / 3) % 2 === 0;
       const lcC = curr.clone().addScaledVector(right, -(half + CURB));
       const rcC = curr.clone().addScaledVector(right,  half + CURB);
@@ -489,7 +411,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       addQuad(cV, cI, lcC, lc, lnC, ln, ASPHALT_Y + 0.01);
       addQuad(cV, cI, rc, rcC, rn, rnC, ASPHALT_Y + 0.01);
 
-      // Grass runoff
       const lcG = curr.clone().addScaledVector(right, -(half + CURB + GRASS_W));
       const rcG = curr.clone().addScaledVector(right,  half + CURB + GRASS_W);
       const lnG = next.clone().addScaledVector(nRight, -(half + CURB + GRASS_W));
@@ -497,7 +418,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       addQuad(gV, gI, lcG, lcC, lnG, lnC, 0.0);
       addQuad(gV, gI, rcC, rcG, rnC, rnG, 0.0);
 
-      // Dashed center line
       if (i % 18 < 8) {
         const cl = curr.clone().addScaledVector(right, -0.28);
         const cr = curr.clone().addScaledVector(right,  0.28);
@@ -518,14 +438,12 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       return m;
     }
 
-    const asphaltMesh = buildMesh(aV, aI, asphaltMat, 1);
-    scene.add(asphaltMesh);
+    scene.add(buildMesh(aV, aI, asphaltMat, 1));
     scene.add(buildMesh(crV, crI, curbRedMat, 1));
     scene.add(buildMesh(cwV, cwI, curbWhtMat, 1));
     scene.add(buildMesh(gV,  gI,  grassMat, 0));
     scene.add(buildMesh(wV,  wI,  whiteMat, 2));
 
-    // ── ARMCO BARRIERS ──
     const armcoMat  = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.8, roughness: 0.3 });
     const postMat   = new THREE.MeshStandardMaterial({ color: 0x666666, metalness: 0.5, roughness: 0.5 });
     const step = 5;
@@ -551,7 +469,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       });
     }
 
-    // ── START/FINISH GANTRY ──
     const startPos  = trackCurve.getPointAt(0);
     const startTang = trackCurve.getTangentAt(0);
     const startRight = new THREE.Vector3().crossVectors(startTang, new THREE.Vector3(0,1,0)).normalize();
@@ -572,7 +489,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     gantryBeam.lookAt(gantryBeam.position.x+startTang.x, gantryBeam.position.y, gantryBeam.position.z+startTang.z);
     scene.add(gantryBeam);
 
-    // Checkered finish line
     for (let c = 0; c < 14; c++) {
       for (let r = 0; r < 3; r++) {
         if ((c+r)%2===0) {
@@ -586,7 +502,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       }
     }
 
-    // ── DRS ZONE BOARD (back straight) ──
     const drsT = 0.42;
     const drsPos = trackCurve.getPointAt(drsT);
     const drsTang = trackCurve.getTangentAt(drsT);
@@ -608,7 +523,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     drsBoardGrp.lookAt(drsPos.x + drsTang.x * 20, drsBoardGrp.position.y, drsPos.z + drsTang.z * 20);
     scene.add(drsBoardGrp);
 
-    // ── GRANDSTANDS ──
     const standMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness:0.8, metalness:0.2 });
     for (let s of [-1,1]) {
       const stand = new THREE.Mesh(new THREE.BoxGeometry(0.5,6,30), standMat);
@@ -616,7 +530,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       stand.position.set(sp.x, sp.y+3, sp.z);
       stand.lookAt(stand.position.x+startRight.x, stand.position.y, stand.position.z+startRight.z);
       scene.add(stand);
-      // Colorful seats
       const seatColors = [0xee7700, 0xffffff, 0xee1111, 0x0033ee];
       for (let row=0;row<4;row++) for (let col=0;col<16;col++) {
         const seat = new THREE.Mesh(new THREE.BoxGeometry(1.2,0.6,0.6), new THREE.MeshPhongMaterial({color:seatColors[(row+col)%seatColors.length]}));
@@ -629,7 +542,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       }
     }
 
-    // ── ENVIRONMENT: mountains, trees ──
     for (let i=0;i<14;i++) {
       const a=(i/14)*Math.PI*2, d=480+Math.random()*100, h=90+Math.random()*110;
       const m = new THREE.Mesh(new THREE.ConeGeometry(40+Math.random()*30, h, 5), new THREE.MeshStandardMaterial({color:0x2a3f1a,roughness:1}));
@@ -647,7 +559,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       fol.position.set(x,h*0.5-1,z); scene.add(fol);
     }
 
-    // ── ITEM BOXES ──
     const itemBoxes = [];
     for (let i=0;i<8;i++) {
       const t=(i/8)+0.06;
@@ -661,8 +572,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       itemBoxes.push(box);
     }
 
-    // ── CARS (player + AI: RB21 GLB if available, else procedural; AI get different colors) ──
-    // 15 distinct livery colors (F1 team–inspired: Orange, Ferrari red, Mercedes teal, McLaren orange, Alpine blue, etc.)
     const aiColors = [
       0xff6600, 0xdc0000, 0x00d2be, 0xff8700, 0x0090ff, 0x2b4562, 0x006f62, 0x005aff,
       0xe6002d, 0x0a2e5c, 0xf596c8, 0x37bedd, 0x393839, 0xfbdb0c, 0x8436b8,
@@ -671,38 +580,16 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     scene.add(playerCarRef.current);
     const aiKarts = [];
 
-    // AI top speed in same units as player (physics.speedMax scale)
     const aiBaseSpeed = physics.speedMax * diff.aiSpeed;
 
-    // Optimal racing line offsets per track-T zone (apex inside, entry/exit outside)
-    // Each entry: [tStart, tEnd, apexOffset] — offset in track-width units (-1=left edge, +1=right edge)
     const racingLineZones = [
-      // Main straight — stay centre-right
-      { s: 0.00, e: 0.08, apex: 3 },
-      // T1 braking / entry — wide left
-      { s: 0.08, e: 0.12, apex: -5 },
-      // T1 apex — cut right
-      { s: 0.12, e: 0.18, apex: 6 },
-      // T1 exit — open left
-      { s: 0.18, e: 0.22, apex: -4 },
-      // Esses — alternate
-      { s: 0.22, e: 0.28, apex: 4 },
-      { s: 0.28, e: 0.32, apex: -4 },
-      // T4 sweep — wide right, apex left
-      { s: 0.32, e: 0.38, apex: -5 },
-      { s: 0.38, e: 0.42, apex: 5 },
-      // Back straight — centre
-      { s: 0.42, e: 0.55, apex: 0 },
-      // Hairpin entry — wide right
-      { s: 0.55, e: 0.60, apex: 5 },
-      // Hairpin apex — cut hard left
-      { s: 0.60, e: 0.66, apex: -6 },
-      // Hairpin exit — sweep right
-      { s: 0.66, e: 0.72, apex: 5 },
-      // Twisty return
-      { s: 0.72, e: 0.78, apex: -4 },
-      { s: 0.78, e: 0.84, apex: 4 },
-      // Return straight
+      { s: 0.00, e: 0.08, apex: 3 }, { s: 0.08, e: 0.12, apex: -5 },
+      { s: 0.12, e: 0.18, apex: 6 }, { s: 0.18, e: 0.22, apex: -4 },
+      { s: 0.22, e: 0.28, apex: 4 }, { s: 0.28, e: 0.32, apex: -4 },
+      { s: 0.32, e: 0.38, apex: -5 }, { s: 0.38, e: 0.42, apex: 5 },
+      { s: 0.42, e: 0.55, apex: 0 }, { s: 0.55, e: 0.60, apex: 5 },
+      { s: 0.60, e: 0.66, apex: -6 }, { s: 0.66, e: 0.72, apex: 5 },
+      { s: 0.72, e: 0.78, apex: -4 }, { s: 0.78, e: 0.84, apex: 4 },
       { s: 0.84, e: 1.00, apex: 0 },
     ];
 
@@ -713,7 +600,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       return 0;
     }
 
-    // AI personalities
     const personalities = [
       { name: 'aggressive', rbStrength: 0.055, rbCap: 0.22, topSpeedMult: 1.06, racingLineFidelity: 0.7, itemUseGap: 0.04, laneWander: 0.02 },
       { name: 'defensive',  rbStrength: 0.030, rbCap: 0.12, topSpeedMult: 0.96, racingLineFidelity: 0.95, itemUseGap: 0.08, laneWander: 0.01 },
@@ -728,25 +614,16 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const personality = personalities[i % personalities.length];
       const topSpeed = aiBaseSpeed * personality.topSpeedMult * (0.95 + Math.random() * 0.10);
       aiKarts.push({
-        mesh: car,
-        trackT: startT,
-        lastT: startT,
-        speed: topSpeed * 0.3,
-        topSpeed,
+        mesh: car, trackT: startT, lastT: startT,
+        speed: topSpeed * 0.3, topSpeed,
         offset: (i % 2 === 0 ? 1 : -1) * (2 + (i % 3) * 1.2),
-        targetOffset: 0,
-        lap: 0,
+        targetOffset: 0, lap: 0,
         wobble: Math.random() * Math.PI * 2,
-        personality,
-        hasItem: false,
-        itemCooldown: 0,
-        // Rubber-band noise phase — each AI has unique phase so they don't pulse together
-        rbPhase: Math.random() * Math.PI * 2,
-        rbNoiseT: 0,
+        personality, hasItem: false, itemCooldown: 0,
+        rbPhase: Math.random() * Math.PI * 2, rbNoiseT: 0,
       });
     }
 
-    // When RB21 loads, replace player (original livery) and AI (each with its own livery color)
     loadRB21Car()
       .then((rb21) => {
         scene.remove(playerCarRef.current);
@@ -764,9 +641,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     // ── PLAYER STATE ──
     const ps = {
       trackT: 0, speed: 0, lateralOffset: 0, lap: 0,
-      heading: 0,       // current yaw angle relative to track tangent
-      steerVel: 0,      // steering angular velocity (builds up, then decays)
-      lateralVel: 0,    // lateral velocity carries momentum (sliding feel)
+      heading: 0,    // yaw angle relative to track tangent
+      steerVel: 0,   // steering angular velocity (builds up, decays)
+      lateralVel: 0, // lateral velocity with momentum (sliding feel)
       lastT: 0, boost: 0, hasItem: false, position: 1,
       finished: false, finishTime: null,
       damaged: false,
@@ -787,7 +664,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         if (elapsed>=4) { raceStarted=true; startTime=Date.now(); }
       }
 
-      // Item box animation
       itemBoxes.forEach(box => {
         if (box.userData.active) {
           box.children[0].rotation.y += 0.04;
@@ -805,38 +681,56 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         const damageMult = ps.damaged ? DAMAGED_SPEED_FACTOR : 1;
         const SPEED_MAX = physics.speedMax * boostMult * damageMult;
 
+        // ── THROTTLE / BRAKE ──
         if (keys['ArrowUp'] || keys['KeyW']) {
-          // Accelerate only while holding throttle
           const drag = physics.drag * ps.speed * ps.speed;
           const thrust = physics.thrust * boostMult;
           ps.speed = Math.min(SPEED_MAX, ps.speed + thrust - drag);
         } else if (keys['ArrowDown'] || keys['KeyS']) {
           ps.speed = Math.max(-40, ps.speed - physics.braking);
         } else {
-          // No throttle: slow down quickly (engine braking + drag), don’t coast on your own
           const engineBraking = 2.2;
           const drag = physics.drag * ps.speed * ps.speed;
           ps.speed = Math.max(0, ps.speed - engineBraking - drag);
         }
 
-        // Car physics: steering changes heading, movement follows (more natural weight and understeer)
-        const si = (keys['ArrowLeft']||keys['KeyA'])?1:(keys['ArrowRight']||keys['KeyD'])?-1:0;
+        // ── STEERING: angular velocity model with inertia ──
+        // Pressing a key builds up steer velocity; releasing bleeds it off quickly
+        // and heading self-centers. This gives a natural build-up / unwind feel.
+        const si = (keys['ArrowLeft']||keys['KeyA']) ? 1 : (keys['ArrowRight']||keys['KeyD']) ? -1 : 0;
         const speedNorm = Math.min(1, ps.speed / physics.speedMax);
-        const steerAtSpeed = 0.011 * (0.6 + 0.4 * (1 - speedNorm)); // less steering at high speed (understeer)
+        // Torque decreases at high speed (understeer at high speed)
+        const steerTorque = 0.0022 * (1.0 - speedNorm * 0.5);
+
         if (si !== 0) {
-          ps.heading += si * steerAtSpeed;
+          // Build steer velocity in the pressed direction
+          ps.steerVel += si * steerTorque * 60;
+          ps.steerVel = Math.max(-0.065, Math.min(0.065, ps.steerVel));
         } else {
-          ps.heading *= 0.97; // gentle recenter so it doesn’t snap straight
+          // Release: velocity bleeds off quickly, heading gently self-centers
+          ps.steerVel *= 0.72;
+          ps.heading -= ps.heading * 0.06;
         }
-        const MAX_HEADING = 0.48;
+        // Always bleed steer velocity a bit to prevent accumulation
+        ps.steerVel *= 0.88;
+        ps.heading += ps.steerVel;
+
+        const MAX_HEADING = 0.52;
         ps.heading = Math.max(-MAX_HEADING, Math.min(MAX_HEADING, ps.heading));
 
-        // Move along track by cos(heading), lateral by sin(heading)
+        // ── LATERAL MOVEMENT WITH MOMENTUM ──
+        // The car has lateral inertia — it doesn't snap direction instantly.
+        // This gives a weight-transfer / sliding feel in corners.
         const trackLenWorld = 550;
         const lateralScale = trackLenWorld * TRACK_SCALE;
+        const wantedLateralVel = -ps.speed * Math.sin(ps.heading) * lateralScale;
+        // grip: how fast lateral vel tracks desired (lower = more sliding)
+        const grip = 0.20 + speedNorm * 0.06;
+        ps.lateralVel += (wantedLateralVel - ps.lateralVel) * grip;
+
         ps.lastT = ps.trackT;
         ps.trackT = (ps.trackT + ps.speed * Math.cos(ps.heading) * TRACK_SCALE + 1) % 1;
-        ps.lateralOffset -= ps.speed * Math.sin(ps.heading) * lateralScale;
+        ps.lateralOffset += ps.lateralVel;
 
         const offTrackLimit = half + 22;
         ps.lateralOffset = Math.max(-offTrackLimit, Math.min(offTrackLimit, ps.lateralOffset));
@@ -848,7 +742,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           if (offSec >= OFF_TRACK_RESPAWN_SEC) {
             ps.trackT = (ps.lastOnTrackT - 0.025 + 1) % 1;
             ps.lateralOffset = 0;
+            ps.lateralVel = 0;
             ps.heading = 0;
+            ps.steerVel = 0;
             ps.speed = Math.max(0, ps.speed * 0.4);
             ps.offTrackSince = null;
           }
@@ -874,7 +770,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         });
       }
 
-      // Player car position and orientation (car points in driving direction = track tangent + heading)
+      // Player car position and orientation
       const normT = (ps.trackT+1)%1;
       const pPos  = trackCurve.getPointAt(normT);
       const pNext = trackCurve.getPointAt((normT+0.001)%1);
@@ -910,50 +806,37 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           if (ai.itemCooldown > 0) ai.itemCooldown--;
 
           const aiProgress = ai.lap + ai.trackT;
-          const gap = playerProgress - aiProgress; // positive = player ahead
+          const gap = playerProgress - aiProgress;
 
-          // ── RUBBER BAND ──
-          // Natural-feeling RB: slow sine drift + occasional "push" moments
-          // Each AI has its own noise phase so they don't all surge together
           const rbNoise = Math.sin(ai.rbNoiseT + ai.rbPhase) * 0.4 + Math.sin(ai.rbNoiseT * 2.3 + ai.rbPhase) * 0.15;
           const rawRb = gap * physics.speedMax * p.rbStrength * (1 + rbNoise * 0.3);
           const rb = Math.max(-physics.speedMax * 0.06, Math.min(physics.speedMax * p.rbCap, rawRb));
-          // Smooth speed convergence — aggressive drivers react faster
           const convergence = p.name === 'aggressive' ? 0.055 : p.name === 'erratic' ? 0.07 : 0.035;
           const targetSpeed = ai.topSpeed + rb;
           ai.speed += (targetSpeed - ai.speed) * convergence;
 
-          // ── BRAKING ZONES (corner curvature detection) ──
-          // Approximate curvature by comparing tangents ahead
           const tAhead = (ai.trackT + 0.015) % 1;
           const tang1 = trackCurve.getTangentAt(ai.trackT);
           const tang2 = trackCurve.getTangentAt(tAhead);
-          const curvature = 1 - tang1.dot(tang2); // 0=straight, higher=corner
-          // Slow down for corners proportional to curvature and personality
+          const curvature = 1 - tang1.dot(tang2);
           const cornerBrake = curvature * physics.speedMax * (p.name === 'aggressive' ? 0.6 : p.name === 'erratic' ? 0.5 : 0.8);
           const cornerTargetSpeed = Math.max(ai.topSpeed * 0.45, ai.topSpeed - cornerBrake);
           if (ai.speed > cornerTargetSpeed) {
             ai.speed -= (ai.speed - cornerTargetSpeed) * 0.08;
           }
 
-          // ── VARIATION ──
           const variation = Math.sin(ai.wobble * 0.7) * physics.speedMax * diff.aiVar * 0.03;
-
           ai.lastT = ai.trackT;
-          const step = (ai.speed + variation) * TRACK_SCALE;
-          ai.trackT = (ai.trackT + step + 1) % 1;
+          const aiStep = (ai.speed + variation) * TRACK_SCALE;
+          ai.trackT = (ai.trackT + aiStep + 1) % 1;
           if (ai.lastT > 0.97 && ai.trackT < 0.03) ai.lap++;
 
-          // ── RACING LINE ──
           const racingApex = getRacingLineOffset(ai.trackT);
-          // Personality fidelity: aggressive & defensive follow line well, erratic less so
           const wanderNoise = (Math.sin(ai.wobble * 0.18) * 2 + Math.sin(ai.wobble * 0.41) * 1) * p.laneWander * half;
           ai.targetOffset = racingApex * p.racingLineFidelity + wanderNoise;
           ai.targetOffset = Math.max(-half * 0.82, Math.min(half * 0.82, ai.targetOffset));
-          // Smoothly steer toward racing line target
           ai.offset += (ai.targetOffset - ai.offset) * 0.04;
 
-          // ── ITEM PICKUP ──
           itemBoxes.forEach(box => {
             if (box.userData.active && ai.mesh.position.distanceTo(box.position) < 3.5 && !ai.hasItem) {
               ai.hasItem = true;
@@ -962,24 +845,18 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
             }
           });
 
-          // ── ITEM USAGE (strategic) ──
           if (ai.hasItem && ai.itemCooldown <= 0) {
             const distToPlayer = Math.abs(gap);
             const shouldUse =
-              // Aggressive: use when close behind player
               (p.name === 'aggressive' && gap > -0.05 && gap < p.itemUseGap) ||
-              // Defensive: use when player is right behind (gap slightly negative)
               (p.name === 'defensive' && gap > -p.itemUseGap && gap < 0.01) ||
-              // Consistent: use when close to player either way
               (p.name === 'consistent' && distToPlayer < p.itemUseGap) ||
-              // Erratic: random use
               (p.name === 'erratic' && Math.random() < 0.002);
 
             if (shouldUse) {
               ai.hasItem = false;
               ai.speed = Math.min(ai.speed * 1.3, ai.topSpeed * 1.3);
               ai.itemCooldown = BOOST_DURATION * 2;
-              // Visual boost flame
               const aPos = trackCurve.getPointAt(ai.trackT);
               const aDir = trackCurve.getTangentAt(ai.trackT);
               const fl = new THREE.Mesh(
@@ -1007,7 +884,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         ai.mesh.rotateY(Math.PI);
       });
 
-      // Collision with AI: get hit → damaged, need pit stop
       if (raceStarted && !ps.finished && ps.collisionCooldown <= 0) {
         const pPos = playerCarRef.current.position;
         for (const ai of aiKarts) {
@@ -1019,7 +895,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         }
       }
 
-      // Pit stop: when damaged, slow down in pit zone (main straight) to repair
       const isInPitZone = normT >= PIT_ZONE_T_START || normT <= PIT_ZONE_T_END;
       if (ps.damaged && isInPitZone && ps.speed < 80) {
         ps.inPitSince = (ps.inPitSince ?? 0) + 1;
@@ -1032,7 +907,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         ps.inPitSince = null;
       }
 
-      // Position calc — sort by total progress (lap + fractional T)
       const all = [
         { progress: ps.lap + ps.trackT, isPlayer: true },
         ...aiKarts.map(a => ({ progress: a.lap + a.trackT, isPlayer: false }))
@@ -1084,7 +958,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
   }, [kartColor, kartType, difficulty]);
 
   useEffect(() => {
-    // Use rAF to ensure the DOM is painted and container has real dimensions
     let cleanup;
     const rafId = requestAnimationFrame(() => {
       cleanup = initGame();
