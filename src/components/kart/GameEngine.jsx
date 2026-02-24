@@ -1030,9 +1030,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       // Animate item boxes
       itemBoxes.forEach(box => {
         if (box.userData.active) {
-          box.children[0].rotation.y += 0.035;
-          box.children[1].rotation.z += 0.02;
-          box.children[1].rotation.x = Math.sin(frame * 0.04) * 0.3;
+          box.children[0].rotation.y += 0.04;
+          box.children[1].rotation.z += 0.03;
           box.visible = true;
         } else {
           box.visible = false;
