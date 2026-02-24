@@ -711,12 +711,14 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       // Main asphalt
       addQuad(asphaltVerts, asphaltIdx, lc, rc, ln, rn, 0.05);
 
-      // Curbs (alternate red/white every 6 segments)
-      const isRed = Math.floor(i / 6) % 2 === 0;
+      // F1-style curbs: alternating red/white stripes (every 3 segments)
+      const isRed = Math.floor(i / 3) % 2 === 0;
       const lcCurb = curr.clone().addScaledVector(right, -(half + CURB_W));
       const rcCurb = curr.clone().addScaledVector(right, half + CURB_W);
       const lnCurb = next.clone().addScaledVector(nextRight, -(half + CURB_W));
       const rnCurb = next.clone().addScaledVector(nextRight, half + CURB_W);
+      // left curb: from lcCurb(left) to lc(right)
+      // right curb: from rc(left) to rcCurb(right)
       if (isRed) {
         addQuad(curbRedVerts, curbRedIdx, lcCurb, lc, lnCurb, ln, 0.06);
         addQuad(curbRedVerts, curbRedIdx, rc, rcCurb, rn, rnCurb, 0.06);
@@ -730,6 +732,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const rcGrass = curr.clone().addScaledVector(right, half + CURB_W + GRASS_W);
       const lnGrass = next.clone().addScaledVector(nextRight, -(half + CURB_W + GRASS_W));
       const rnGrass = next.clone().addScaledVector(nextRight, half + CURB_W + GRASS_W);
+      // left grass: from lcGrass(left) to lcCurb(right)
+      // right grass: from rcCurb(left) to rcGrass(right)
       addQuad(grassVerts, grassIdx, lcGrass, lcCurb, lnGrass, lnCurb, 0.0);
       addQuad(grassVerts, grassIdx, rcCurb, rcGrass, rnCurb, rnGrass, 0.0);
 
