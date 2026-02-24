@@ -7,7 +7,7 @@ const BOOST_DURATION = 120;
 const NUM_AI = 15;
 const LAPS_TO_WIN = 3;
 const OFF_TRACK_RESPAWN_SEC = 2;
-const COLLISION_DIST = 4.5;
+const COLLISION_DIST = 10;
 const COLLISION_COOLDOWN_FRAMES = 120;
 const DAMAGED_SPEED_FACTOR = 0.38;
 const PIT_ZONE_T_START = 0.96;
@@ -261,6 +261,7 @@ function createF1Car(color) {
     g.add(duct);
   });
 
+  g.scale.setScalar(2.25); // match visual size to scaled RB21
   return g;
 }
 
@@ -299,7 +300,7 @@ function loadRB21Car() {
         const size = new THREE.Vector3();
         box.getSize(size);
         const maxDim = Math.max(size.x, size.y, size.z);
-        const targetSize = 4;
+        const targetSize = 9; // car size on track (was 4 – scale up so they don’t look like toys)
         const scale = targetSize / maxDim;
         model.scale.setScalar(scale);
         model.rotation.y = Math.PI;
@@ -816,18 +817,19 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           ps.speed = Math.max(0, ps.speed - engineBraking - drag);
         }
 
-        // Car physics: steering changes heading (turn wheel), movement follows heading
+        // Car physics: steering changes heading, movement follows (more natural weight and understeer)
         const si = (keys['ArrowLeft']||keys['KeyA'])?1:(keys['ArrowRight']||keys['KeyD'])?-1:0;
-        const steerRate = 0.014 * Math.max(0.5, ps.speed / physics.speedMax); // responsive turn rate
+        const speedNorm = Math.min(1, ps.speed / physics.speedMax);
+        const steerAtSpeed = 0.011 * (0.6 + 0.4 * (1 - speedNorm)); // less steering at high speed (understeer)
         if (si !== 0) {
-          ps.heading += si * steerRate;
+          ps.heading += si * steerAtSpeed;
         } else {
-          ps.heading *= 0.94; // recenter when not steering
+          ps.heading *= 0.97; // gentle recenter so it doesn’t snap straight
         }
-        const MAX_HEADING = 0.55;
+        const MAX_HEADING = 0.48;
         ps.heading = Math.max(-MAX_HEADING, Math.min(MAX_HEADING, ps.heading));
 
-        // Move along track by cos(heading), lateral by sin(heading) (car drives where it points)
+        // Move along track by cos(heading), lateral by sin(heading)
         const trackLenWorld = 550;
         const lateralScale = trackLenWorld * TRACK_SCALE;
         ps.lastT = ps.trackT;
