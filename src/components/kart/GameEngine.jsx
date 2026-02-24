@@ -907,19 +907,19 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       scene.add(m);
     }
 
-    // Trees (simple conifers)
+    // Distant trees along the outer edge only (far from track)
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3010, roughness: 0.9 });
-    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x1a4a10, roughness: 0.9 });
-    for (let i = 0; i < 200; i++) {
+    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2d6e1a, roughness: 0.9 });
+    for (let i = 0; i < 120; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const dist = 60 + Math.random() * 350;
+      const dist = 180 + Math.random() * 280; // far from track only
       const x = Math.cos(angle) * dist;
       const z = Math.sin(angle) * dist;
-      const treeH = 5 + Math.random() * 8;
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, treeH * 0.35, 6), trunkMat);
+      const treeH = 6 + Math.random() * 10;
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, treeH * 0.35, 6), trunkMat);
       trunk.position.set(x, treeH * 0.17 - 1, z);
       scene.add(trunk);
-      const foliage = new THREE.Mesh(new THREE.ConeGeometry(1.8 + Math.random() * 1.2, treeH, 7), foliageMat);
+      const foliage = new THREE.Mesh(new THREE.ConeGeometry(2.2 + Math.random() * 1.5, treeH, 7), foliageMat);
       foliage.position.set(x, treeH * 0.5 - 1, z);
       scene.add(foliage);
     }
