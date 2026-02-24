@@ -726,16 +726,19 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         const SPEED_MAX = physics.speedMax * boostMult * damageMult;
 
         if (keys['ArrowUp'] || keys['KeyW']) {
-          const drag = physics.drag * ps.speed * ps.speed;
+          // Full throttle: accelerate smoothly up to SPEED_MAX, no drag fighting the input
           const thrust = physics.thrust * boostMult;
-          ps.speed = Math.min(SPEED_MAX, ps.speed + thrust - drag);
+          ps.speed = Math.min(SPEED_MAX, ps.speed + thrust);
           gameSounds.engine(ps.speed / physics.speedMax);
         } else if (keys['ArrowDown'] || keys['KeyS']) {
-          ps.speed = Math.max(-40, ps.speed - physics.braking);
+          // Strong braking plus some drag
+          const drag = physics.drag * ps.speed * ps.speed;
+          ps.speed = Math.max(0, ps.speed - physics.braking - drag * 0.4);
           if (frame % 8 === 0) gameSounds.brake();
         } else {
-          const engineBraking = 1.4;
-          const drag = physics.drag * ps.speed * ps.speed;
+          // Coasting: gentle slowdown from engine braking + drag
+          const engineBraking = 0.9;
+          const drag = physics.drag * ps.speed * ps.speed * 0.6;
           ps.speed = Math.max(0, ps.speed - engineBraking - drag);
         }
 
