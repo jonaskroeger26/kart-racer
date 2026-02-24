@@ -377,6 +377,7 @@ export default function MainMenu({ onStart }) {
           </motion.div>
         )}
 
+
         {/* ═══════════════ KART SELECT ═══════════════ */}
         {screen === 'select' && (
           <motion.div
