@@ -297,7 +297,13 @@ export default function MainMenu({ onStart }) {
 
         {/* ═══════════════ MAIN SCREEN ═══════════════ */}
         {screen === 'main' && (
-          <div className="relative h-full flex flex-col items-center justify-center">
+          <motion.div
+            key="main"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="relative h-full flex flex-col items-center justify-center"
+          >
             {/* Hero title */}
             <div className="text-center mb-12 select-none">
               <div
