@@ -1,63 +1,105 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useCallback } from 'react';
 
 export default function MobileControls() {
-  const keysRef = useRef({});
-
   const simulateKey = useCallback((code, pressed) => {
     const event = new KeyboardEvent(pressed ? 'keydown' : 'keyup', {
       code,
-      bubbles: true
+      bubbles: true,
     });
     window.dispatchEvent(event);
   }, []);
 
-  const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  const isTouchDevice =
+    typeof window !== 'undefined' &&
+    ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-  if (!isMobile) return null;
+  if (!isTouchDevice) return null;
+
+  const btn =
+    'min-w-[72px] min-h-[72px] sm:min-w-[80px] sm:min-h-[80px] rounded-2xl flex items-center justify-center font-bold text-white border-2 select-none active:scale-95 transition-transform touch-manipulation';
+  const steerBtn = `${btn} bg-white/25 backdrop-blur-md border-white/20 text-2xl`;
+  const gasBtn = `${btn} bg-green-500/40 border-green-400/30 text-lg`;
+  const brakeBtn = `${btn} bg-red-500/40 border-red-400/30 text-sm min-h-[56px] sm:min-h-[64px]`;
+  const itemBtn = `${btn} w-16 h-16 rounded-full bg-amber-500/50 border-amber-400/30 text-xl`;
+
+  const handlePointer = (code, down, e) => {
+    e?.preventDefault?.();
+    simulateKey(code, down);
+  };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 pointer-events-auto z-40 pb-2 px-2">
-      <div className="flex justify-between items-end">
-        {/* Left controls - steering */}
-        <div className="flex gap-2">
+    <div
+      className="absolute inset-x-0 bottom-0 z-40 pointer-events-auto pb-4 px-3 sm:pb-6 sm:px-4"
+      style={{ touchAction: 'manipulation' }}
+    >
+      <div className="flex justify-between items-end gap-2 max-w-lg mx-auto">
+        {/* Left: steer */}
+        <div className="flex gap-3">
           <button
-            onTouchStart={() => simulateKey('ArrowLeft', true)}
-            onTouchEnd={() => simulateKey('ArrowLeft', false)}
-            className="w-16 h-16 md:w-20 md:h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white text-2xl font-bold active:bg-white/40 transition-colors border border-white/10"
+            type="button"
+            className={steerBtn}
+            onTouchStart={(e) => handlePointer('ArrowLeft', true, e)}
+            onTouchEnd={(e) => handlePointer('ArrowLeft', false, e)}
+            onTouchCancel={(e) => handlePointer('ArrowLeft', false, e)}
+            onPointerDown={(e) => { e.target.setPointerCapture(e.pointerId); handlePointer('ArrowLeft', true, e); }}
+            onPointerUp={(e) => handlePointer('ArrowLeft', false, e)}
+            onPointerLeave={(e) => { if (e.buttons) handlePointer('ArrowLeft', false, e); }}
+            aria-label="Steer left"
           >
             ←
           </button>
           <button
-            onTouchStart={() => simulateKey('ArrowRight', true)}
-            onTouchEnd={() => simulateKey('ArrowRight', false)}
-            className="w-16 h-16 md:w-20 md:h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white text-2xl font-bold active:bg-white/40 transition-colors border border-white/10"
+            type="button"
+            className={steerBtn}
+            onTouchStart={(e) => handlePointer('ArrowRight', true, e)}
+            onTouchEnd={(e) => handlePointer('ArrowRight', false, e)}
+            onTouchCancel={(e) => handlePointer('ArrowRight', false, e)}
+            onPointerDown={(e) => { e.target.setPointerCapture(e.pointerId); handlePointer('ArrowRight', true, e); }}
+            onPointerUp={(e) => handlePointer('ArrowRight', false, e)}
+            onPointerLeave={(e) => { if (e.buttons) handlePointer('ArrowRight', false, e); }}
+            aria-label="Steer right"
           >
             →
           </button>
         </div>
 
-        {/* Center - item use */}
+        {/* Center: item */}
         <button
-          onTouchStart={() => simulateKey('Space', true)}
-          onTouchEnd={() => simulateKey('Space', false)}
-          className="w-14 h-14 bg-yellow-500/40 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl active:bg-yellow-500/70 transition-colors border border-yellow-300/30 mb-1"
+          type="button"
+          className={itemBtn}
+          onTouchStart={(e) => handlePointer('Space', true, e)}
+          onTouchEnd={(e) => handlePointer('Space', false, e)}
+          onTouchCancel={(e) => handlePointer('Space', false, e)}
+          aria-label="Use item"
         >
           🍄
         </button>
 
-        {/* Right controls - gas/brake */}
+        {/* Right: gas / brake */}
         <div className="flex flex-col gap-2">
           <button
-            onTouchStart={() => simulateKey('ArrowUp', true)}
-            onTouchEnd={() => simulateKey('ArrowUp', false)}
-            className="w-16 h-16 md:w-20 md:h-20 bg-green-500/30 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white text-lg font-bold active:bg-green-500/60 transition-colors border border-green-300/20"
+            type="button"
+            className={gasBtn}
+            onTouchStart={(e) => handlePointer('ArrowUp', true, e)}
+            onTouchEnd={(e) => handlePointer('ArrowUp', false, e)}
+            onTouchCancel={(e) => handlePointer('ArrowUp', false, e)}
+            onPointerDown={(e) => { e.target.setPointerCapture(e.pointerId); handlePointer('ArrowUp', true, e); }}
+            onPointerUp={(e) => handlePointer('ArrowUp', false, e)}
+            onPointerLeave={(e) => { if (e.buttons) handlePointer('ArrowUp', false, e); }}
+            aria-label="Gas"
           >
             GAS
           </button>
           <button
-            onTouchStart={() => simulateKey('ArrowDown', true)}
-            onTouchEnd={() => simulateKey('ArrowDown', false)}
-            className="w-16 h-12 md:w-20 md:h-14 bg-red-500/30 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white text-sm font-bold active:bg-red-500/60 transition-colors border border-red-300/20"
+            type="button"
+            className={brakeBtn}
+            onTouchStart={(e) => handlePointer('ArrowDown', true, e)}
+            onTouchEnd={(e) => handlePointer('ArrowDown', false, e)}
+            onTouchCancel={(e) => handlePointer('ArrowDown', false, e)}
+            onPointerDown={(e) => { e.target.setPointerCapture(e.pointerId); handlePointer('ArrowDown', true, e); }}
+            onPointerUp={(e) => handlePointer('ArrowDown', false, e)}
+            onPointerLeave={(e) => { if (e.buttons) handlePointer('ArrowDown', false, e); }}
+            aria-label="Brake"
           >
             BRK
           </button>

@@ -31,191 +31,6 @@ function createTrackPath() {
   return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.3);
 }
 
-function createF1Car(color) {
-  const g = new THREE.Group();
-  const paint = new THREE.MeshStandardMaterial({ color, metalness: 0.55, roughness: 0.28 });
-  const carbon = new THREE.MeshStandardMaterial({ color: 0x0d0d0d, metalness: 0.35, roughness: 0.55 });
-  const black = new THREE.MeshStandardMaterial({ color: 0x060606, roughness: 0.92, metalness: 0 });
-  const rubber = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.96, metalness: 0 });
-  const silver = new THREE.MeshStandardMaterial({ color: 0xc8c8c8, metalness: 0.92, roughness: 0.08 });
-  const darkCarbon = new THREE.MeshStandardMaterial({ color: 0x151515, metalness: 0.45, roughness: 0.5 });
-  const accent = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.6, roughness: 0.25 });
-
-  const noseGeo = new THREE.CylinderGeometry(0.07, 0.28, 1.85, 8);
-  const nose = new THREE.Mesh(noseGeo, paint);
-  nose.rotation.z = Math.PI / 2;
-  nose.position.set(0, 0.2, -2.12);
-  g.add(nose);
-  const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), paint);
-  noseTip.position.set(0, 0.2, -2.58);
-  g.add(noseTip);
-
-  const fwMain = new THREE.Mesh(new THREE.BoxGeometry(2.85, 0.055, 0.5), paint);
-  fwMain.position.set(0, 0.07, -2.58);
-  g.add(fwMain);
-  [-1.38, 1.38].forEach(x => {
-    const ep = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.24, 0.5), paint);
-    ep.position.set(x, 0.19, -2.58);
-    g.add(ep);
-  });
-  const fwFlap1 = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.032, 0.2), carbon);
-  fwFlap1.position.set(0, 0.12, -2.48);
-  g.add(fwFlap1);
-  const fwFlap2 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.028, 0.16), carbon);
-  fwFlap2.position.set(0, 0.155, -2.42);
-  g.add(fwFlap2);
-
-  [-1, 1].forEach(s => {
-    const pod = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.36, 1.55), paint);
-    pod.position.set(s * 0.72, 0.36, 0.2);
-    g.add(pod);
-    const inlet = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.26, 0.26), black);
-    inlet.position.set(s * 0.72, 0.4, -0.55);
-    g.add(inlet);
-  });
-
-  [-1, 1].forEach(s => {
-    const barge = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.35, 0.7), carbon);
-    barge.position.set(s * 0.58, 0.25, -0.5);
-    barge.rotation.z = s * 0.15;
-    g.add(barge);
-    const barge2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.28, 0.5), darkCarbon);
-    barge2.position.set(s * 0.62, 0.22, -0.2);
-    barge2.rotation.z = s * 0.1;
-    g.add(barge2);
-  });
-
-  const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.42, 2.6), paint);
-  chassis.position.set(0, 0.42, 0.0);
-  g.add(chassis);
-  const cockpitSurround = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.18, 0.7), darkCarbon);
-  cockpitSurround.position.set(0, 0.65, -0.3);
-  g.add(cockpitSurround);
-
-  const haloBar = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.95, 8), carbon);
-  haloBar.rotation.z = Math.PI / 2;
-  haloBar.position.set(0, 0.98, -0.18);
-  g.add(haloBar);
-  [-0.35, 0.35].forEach(x => {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.42, 6), carbon);
-    leg.position.set(x, 0.78, -0.18);
-    g.add(leg);
-  });
-  const haloCenter = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.28, 6), carbon);
-  haloCenter.position.set(0, 0.92, -0.45);
-  haloCenter.rotation.x = 0.4;
-  g.add(haloCenter);
-
-  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.3, roughness: 0.4 }));
-  helmet.scale.set(1, 0.88, 1.1);
-  helmet.position.set(0, 0.82, -0.28);
-  g.add(helmet);
-  const visor = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), new THREE.MeshStandardMaterial({ color: 0x331100, metalness: 0.8, roughness: 0.1, transparent: true, opacity: 0.85 }));
-  visor.scale.set(1, 0.6, 0.55);
-  visor.position.set(0, 0.81, -0.44);
-  g.add(visor);
-
-  const airbox = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.14, 0.55, 8), paint);
-  airbox.position.set(0, 0.88, 0.35);
-  g.add(airbox);
-  const engineCover = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.26, 1.18), paint);
-  engineCover.position.set(0, 0.7, 0.85);
-  g.add(engineCover);
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 1.35), accent);
-  stripe.position.set(0, 0.82, 0.8);
-  g.add(stripe);
-
-  const rwMainPlane = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.07, 0.38), paint);
-  rwMainPlane.position.set(0, 0.98, 1.72);
-  g.add(rwMainPlane);
-  const rwFlap = new THREE.Mesh(new THREE.BoxGeometry(1.88, 0.05, 0.22), carbon);
-  rwFlap.position.set(0, 1.06, 1.58);
-  g.add(rwFlap);
-  [-0.98, 0.98].forEach(x => {
-    const ep = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.55, 0.42), paint);
-    ep.position.set(x, 0.82, 1.72);
-    g.add(ep);
-  });
-  [-0.3, 0.3].forEach(x => {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.48, 0.06), carbon);
-    post.position.set(x, 0.74, 1.72);
-    g.add(post);
-  });
-  const beam = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.04, 0.14), carbon);
-  beam.position.set(0, 0.62, 1.68);
-  g.add(beam);
-
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.04, 3.8), carbon);
-  floor.position.set(0, 0.06, 0.0);
-  g.add(floor);
-  const diffuser = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.22, 0.6), darkCarbon);
-  diffuser.position.set(0, 0.14, 1.85);
-  diffuser.rotation.x = 0.3;
-  g.add(diffuser);
-  for (let f = -2; f <= 2; f++) {
-    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.18, 0.55), carbon);
-    fin.position.set(f * 0.28, 0.14, 1.88);
-    g.add(fin);
-  }
-
-  const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.22, 8), silver);
-  exhaust.rotation.x = Math.PI / 2;
-  exhaust.position.set(0.18, 0.55, 1.78);
-  g.add(exhaust);
-
-  [-1, 1].forEach(s => {
-    const wb = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 5), carbon);
-    wb.rotation.z = Math.PI / 2;
-    wb.position.set(s * 0.44, 0.28, -1.38);
-    g.add(wb);
-    const wbr = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 5), carbon);
-    wbr.rotation.z = Math.PI / 2;
-    wbr.position.set(s * 0.44, 0.28, 1.35);
-    g.add(wbr);
-  });
-
-  const wheelData = [
-    { x: -1.08, y: 0.31, z: -1.38, front: true },
-    { x:  1.08, y: 0.31, z: -1.38, front: true },
-    { x: -1.12, y: 0.31, z:  1.38, front: false },
-    { x:  1.12, y: 0.31, z:  1.38, front: false },
-  ];
-  wheelData.forEach(({ x, y, z, front }) => {
-    const wg = new THREE.Group();
-    const r = front ? 0.30 : 0.33;
-    const w = front ? 0.30 : 0.40;
-    const tirePts = [];
-    for (let i = 0; i <= 20; i++) {
-      const a = (i / 20) * Math.PI * 2;
-      tirePts.push(new THREE.Vector2(r + Math.cos(a) * w * 0.38, Math.sin(a) * w * 0.38));
-    }
-    const tire = new THREE.Mesh(new THREE.LatheGeometry(tirePts, 24), rubber);
-    tire.rotation.z = Math.PI / 2;
-    wg.add(tire);
-    const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.72, r * 0.72, w * 0.55, 12), silver);
-    rim.rotation.z = Math.PI / 2;
-    wg.add(rim);
-    const nut = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.15, r * 0.15, w * 0.65, 6), new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 1, roughness: 0.1 }));
-    nut.rotation.z = Math.PI / 2;
-    wg.add(nut);
-    for (let i = 0; i < 5; i++) {
-      const a = (i / 5) * Math.PI * 2;
-      const spoke = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, r * 0.1, r * 0.6), silver);
-      spoke.rotation.set(0, 0, a);
-      wg.add(spoke);
-    }
-    wg.position.set(x, y, z);
-    g.add(wg);
-    const duct = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.62, r * 0.62, 0.06, 12), carbon);
-    duct.rotation.z = Math.PI / 2;
-    duct.position.set(x, y, z);
-    g.add(duct);
-  });
-
-  g.scale.setScalar(2.25);
-  return g;
-}
-
 function createItemBox(position) {
   const group = new THREE.Group();
   const geo = new THREE.CylinderGeometry(1.0, 1.0, 0.1, 16);
@@ -250,7 +65,7 @@ function loadRB21Car() {
         const size = new THREE.Vector3();
         box.getSize(size);
         const maxDim = Math.max(size.x, size.y, size.z);
-        const targetSize = 9;
+        const targetSize = 14;
         const scale = targetSize / maxDim;
         model.scale.setScalar(scale);
         model.rotation.y = Math.PI;
@@ -309,10 +124,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const TRACK_SCALE = 0.0000028;
 
     const kartPhysics = {
-      speeder:  { thrust: 1.45, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 28, speedMax: diff.speedMax * 1.08 },
-      balanced: { thrust: 1.35, drag: 0.0000150, turn: 0.060, friction: 0.7, braking: 25, speedMax: diff.speedMax },
-      heavy:    { thrust: 1.20, drag: 0.0000148, turn: 0.045, friction: 0.55, braking: 22, speedMax: diff.speedMax * 0.92 },
-      offroad:  { thrust: 1.30, drag: 0.0000152, turn: 0.065, friction: 0.65, braking: 24, speedMax: diff.speedMax * 0.96 },
+      speeder:  { thrust: 5.2, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 28, speedMax: diff.speedMax * 1.08 },
+      balanced: { thrust: 4.8, drag: 0.0000150, turn: 0.060, friction: 0.7, braking: 25, speedMax: diff.speedMax },
+      heavy:    { thrust: 4.2, drag: 0.0000148, turn: 0.045, friction: 0.55, braking: 22, speedMax: diff.speedMax * 0.92 },
+      offroad:  { thrust: 4.5, drag: 0.0000152, turn: 0.065, friction: 0.65, braking: 24, speedMax: diff.speedMax * 0.96 },
     };
     const physics = kartPhysics[kartType] || kartPhysics.balanced;
 
@@ -611,7 +426,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       0xff6600, 0xdc0000, 0x00d2be, 0xff8700, 0x0090ff, 0x2b4562, 0x006f62, 0x005aff,
       0xe6002d, 0x0a2e5c, 0xf596c8, 0x37bedd, 0x393839, 0xfbdb0c, 0x8436b8,
     ];
-    const playerCarRef = { current: createF1Car(kartColor) };
+    const playerCarRef = { current: new THREE.Group() };
     scene.add(playerCarRef.current);
     const aiKarts = [];
 
@@ -648,7 +463,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     ];
 
     for (let i = 0; i < NUM_AI; i++) {
-      const car = createF1Car(aiColors[i]);
+      const car = new THREE.Group();
       scene.add(car);
       const startT = (i + 1) * 0.012;
       const personality = personalities[i % personalities.length];
@@ -667,8 +482,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     loadRB21Car()
       .then((rb21) => {
         scene.remove(playerCarRef.current);
-        playerCarRef.current = rb21.group;
-        scene.add(rb21.group);
+        playerCarRef.current = cloneRB21WithLiveryColor(rb21, kartColor);
+        scene.add(playerCarRef.current);
         aiKarts.forEach((ai, i) => {
           scene.remove(ai.mesh);
           const clone = cloneRB21WithLiveryColor(rb21, aiColors[i]);
@@ -739,23 +554,20 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         // and heading self-centers. This gives a natural build-up / unwind feel.
         const si = (keys['ArrowLeft']||keys['KeyA']) ? 1 : (keys['ArrowRight']||keys['KeyD']) ? -1 : 0;
         const speedNorm = Math.min(1, ps.speed / physics.speedMax);
-        // Torque decreases at high speed (understeer at high speed)
-        const steerTorque = 0.0022 * (1.0 - speedNorm * 0.5);
+        // Torque: responsive for mobile/touch; understeer at high speed
+        const steerTorque = 0.0032 * (1.0 - speedNorm * 0.45);
 
         if (si !== 0) {
-          // Build steer velocity in the pressed direction
           ps.steerVel += si * steerTorque * 60;
-          ps.steerVel = Math.max(-0.065, Math.min(0.065, ps.steerVel));
+          ps.steerVel = Math.max(-0.072, Math.min(0.072, ps.steerVel));
         } else {
-          // Release: velocity bleeds off quickly, heading gently self-centers
           ps.steerVel *= 0.72;
           ps.heading -= ps.heading * 0.06;
         }
-        // Always bleed steer velocity a bit to prevent accumulation
         ps.steerVel *= 0.88;
         ps.heading += ps.steerVel;
 
-        const MAX_HEADING = 0.52;
+        const MAX_HEADING = 0.56;
         ps.heading = Math.max(-MAX_HEADING, Math.min(MAX_HEADING, ps.heading));
 
         // ── LATERAL MOVEMENT WITH MOMENTUM ──
