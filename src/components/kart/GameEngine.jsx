@@ -1133,7 +1133,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           ai.wobble += 0.015;
           const speedVar = ai.speed + Math.sin(ai.wobble) * diff.aiVar;
           ai.lastT = ai.trackT;
-          ai.trackT = (ai.trackT + speedVar * 0.0011 + 1) % 1;
+          ai.trackT = (ai.trackT + speedVar * 0.000018 + 1) % 1;
           if (ai.lastT > 0.97 && ai.trackT < 0.03) ai.lap++;
         }
         const aiNormT = (ai.trackT + 1) % 1;
