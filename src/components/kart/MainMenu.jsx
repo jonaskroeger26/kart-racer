@@ -288,8 +288,8 @@ export default function MainMenu({ onStart }) {
       <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #8b5cf6, transparent)', filter: 'blur(60px)' }} />
       <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #ef4444, transparent)', filter: 'blur(60px)' }} />
 
-        {/* ═══════════════ MAIN SCREEN ═══════════════ */}
-        {screen === 'main' && (
+      {/* ═══════════════ MAIN SCREEN ═══════════════ */}
+      {screen === 'main' && (
           <div className="relative h-full flex flex-col items-center justify-center">
             {/* Hero title */}
             <div className="text-center mb-12 select-none">
