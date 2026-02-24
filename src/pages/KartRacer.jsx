@@ -7,9 +7,16 @@ import MobileControls from '@/components/kart/MobileControls';
 export default function KartRacer() {
   const [config, setConfig] = useState(null);
   const [gameState, setGameState] = useState(null);
+  const [gameKey, setGameKey] = useState(0);
 
   const handleStart = useCallback((cfg) => {
     setConfig(cfg);
+    setGameState(null);
+    setGameKey(k => k + 1);
+  }, []);
+
+  const handleBackToMenu = useCallback(() => {
+    setConfig(null);
     setGameState(null);
   }, []);
 
@@ -24,12 +31,13 @@ export default function KartRacer() {
       ) : (
         <>
           <GameEngine
+            key={gameKey}
             onGameState={handleGameState}
             kartColor={config.kartColor}
             kartType={config.kartType}
             difficulty={config.difficulty}
           />
-          <RaceHUD gameState={gameState} kartHex={config.kartHex} />
+          <RaceHUD gameState={gameState} kartHex={config.kartHex} onBackToMenu={handleBackToMenu} />
           <MobileControls />
         </>
       )}

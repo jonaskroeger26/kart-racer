@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import * as THREE from 'three';
 
 const KARTS = [
@@ -10,7 +10,6 @@ const KARTS = [
     color: 0x0600ef,
     hex: '#0600ef',
     accent: '#ffeb00',
-    gradient: 'from-blue-700 to-yellow-400',
     description: 'High-rake aero, Honda power. Built for maximum downforce and speed.',
     stats: { speed: 95, accel: 88, handling: 92, weight: 38 },
   },
@@ -21,7 +20,6 @@ const KARTS = [
     color: 0xdc0000,
     hex: '#dc0000',
     accent: '#ffd700',
-    gradient: 'from-red-600 to-yellow-500',
     description: 'Iconic red. Pure V6 hybrid power and race-bred balance.',
     stats: { speed: 90, accel: 85, handling: 85, weight: 42 },
   },
@@ -32,7 +30,6 @@ const KARTS = [
     color: 0x00d2be,
     hex: '#00d2be',
     accent: '#00ffea',
-    gradient: 'from-teal-500 to-cyan-400',
     description: 'Turbo-hybrid dominance. Engine and aero in perfect harmony.',
     stats: { speed: 88, accel: 82, handling: 88, weight: 45 },
   },
@@ -43,7 +40,6 @@ const KARTS = [
     color: 0xff8700,
     hex: '#ff8700',
     accent: '#ffb366',
-    gradient: 'from-orange-500 to-amber-400',
     description: 'Carbon chassis, Mercedes power. Aggressive aero and traction.',
     stats: { speed: 87, accel: 80, handling: 90, weight: 44 },
   },
@@ -112,7 +108,6 @@ function KartPreview3D({ kartData }) {
     renderer.toneMappingExposure = 1.4;
     el.appendChild(renderer.domElement);
 
-    // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.3));
     const key = new THREE.DirectionalLight(0xffffff, 2.5);
     key.position.set(4, 8, 6);
@@ -127,55 +122,42 @@ function KartPreview3D({ kartData }) {
     under.position.set(0, -1, 0);
     scene.add(under);
 
-    // Ground reflection plane
-    const floorGeo = new THREE.PlaneGeometry(10, 10);
-    const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x050510,
-      metalness: 0.8,
-      roughness: 0.2,
-      transparent: true,
-      opacity: 0.6,
-    });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(10, 10),
+      new THREE.MeshStandardMaterial({ color: 0x050510, metalness: 0.8, roughness: 0.2, transparent: true, opacity: 0.6 })
+    );
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -0.3;
     scene.add(floor);
 
-    // F1-style car preview (low nose, halo, rear wing)
     const group = new THREE.Group();
     const glossy = (col) => new THREE.MeshStandardMaterial({ color: col, metalness: 0.55, roughness: 0.25 });
     const matte = (col) => new THREE.MeshStandardMaterial({ color: col, metalness: 0.1, roughness: 0.8 });
     const carbon = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.35, roughness: 0.55 });
     const chrome = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.95, roughness: 0.08 });
 
-    // Nose cone
     const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.22, 1.4, 8), glossy(kartData.color));
     nose.rotation.z = Math.PI / 2;
     nose.position.set(0, 0.18, -1.9);
     group.add(nose);
 
-    // Front wing
     const fw = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.04, 0.35), glossy(kartData.color));
     fw.position.set(0, 0.1, -2.15);
     group.add(fw);
 
-    // Chassis / sidepods
     const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.38, 2.4), glossy(kartData.color));
     chassis.position.set(0, 0.38, 0);
     group.add(chassis);
 
-    // Halo
     const halo = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.9, 8), carbon);
     halo.rotation.z = Math.PI / 2;
     halo.position.set(0, 0.92, -0.2);
     group.add(halo);
 
-    // Livery stripe
     const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 2.2), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.5, roughness: 0.3 }));
     stripe.position.set(0, 0.78, 0);
     group.add(stripe);
 
-    // Rear wing
     const rearWing = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.05, 0.3), glossy(kartData.color));
     rearWing.position.set(0, 0.95, 1.35);
     group.add(rearWing);
@@ -185,27 +167,24 @@ function KartPreview3D({ kartData }) {
       group.add(post);
     });
 
-    // Wheels (F1 style)
-    const wheelPositions = [[-1.0, 0.28, -1.35], [1.0, 0.28, -1.35], [-1.02, 0.28, 1.35], [1.02, 0.28, 1.35]];
-    wheelPositions.forEach(([x, y, z]) => {
+    [[-1.0, 0.28, -1.35], [1.0, 0.28, -1.35], [-1.02, 0.28, 1.35], [1.02, 0.28, 1.35]].forEach(([x, y, z]) => {
       const wg = new THREE.Group();
       const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.22, 16), matte(0x0a0a0a));
       tire.rotation.z = Math.PI / 2;
       wg.add(tire);
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.24, 10), chrome);
-      rim.rotation.z = Math.PI / 2;
-      wg.add(rim);
+      const rimM = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.24, 10), chrome);
+      rimM.rotation.z = Math.PI / 2;
+      wg.add(rimM);
       wg.position.set(x, y, z);
       group.add(wg);
     });
 
-    group.position.y = 0;
     scene.add(group);
 
-    // Shadow blob
-    const shadowGeo = new THREE.PlaneGeometry(3, 5);
-    const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4 });
-    const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+    const shadow = new THREE.Mesh(
+      new THREE.PlaneGeometry(3, 5),
+      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4 })
+    );
     shadow.rotation.x = -Math.PI / 2;
     shadow.position.y = -0.28;
     scene.add(shadow);
@@ -234,10 +213,6 @@ export default function MainMenu({ onStart }) {
   const [screen, setScreen] = useState('main');
   const [selectedKart, setSelectedKart] = useState(1);
   const [selectedDiff, setSelectedDiff] = useState(1);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const rotateX = useTransform(mouseY, [-300, 300], [8, -8]);
-  const rotateY = useTransform(mouseX, [-500, 500], [-8, 8]);
 
   const kart = KARTS[selectedKart];
   const diff = DIFFICULTIES[selectedDiff];
@@ -248,14 +223,11 @@ export default function MainMenu({ onStart }) {
   });
 
   return (
-    <div
-      className="absolute inset-0 overflow-hidden z-50"
-      onMouseMove={e => { mouseX.set(e.clientX - window.innerWidth / 2); mouseY.set(e.clientY - window.innerHeight / 2); }}
-    >
-      {/* Deep cinematic background */}
+    <div className="absolute inset-0 overflow-hidden z-50">
+      {/* Background */}
       <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 20%, #1a0533 0%, #050510 50%, #000005 100%)' }} />
 
-      {/* Animated star field */}
+      {/* Stars */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(60)].map((_, i) => (
           <motion.div
@@ -273,7 +245,7 @@ export default function MainMenu({ onStart }) {
         ))}
       </div>
 
-      {/* Neon road grid */}
+      {/* Neon grid */}
       <div className="absolute bottom-0 left-0 right-0 h-64 overflow-hidden opacity-25">
         <div style={{
           position: 'absolute', inset: 0,
@@ -284,318 +256,259 @@ export default function MainMenu({ onStart }) {
         }} />
       </div>
 
-      {/* Colored atmospheric glow blobs */}
+      {/* Glow blobs */}
       <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #8b5cf6, transparent)', filter: 'blur(60px)' }} />
       <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #ef4444, transparent)', filter: 'blur(60px)' }} />
 
-      <AnimatePresence mode="wait">
-
-        {/* ═══════════════ MAIN SCREEN ═══════════════ */}
-        {screen === 'main' && (
-          <motion.div
-            key="main"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
-            className="relative h-full flex flex-col items-center justify-center"
-          >
-            {/* Hero title */}
-            <motion.div
-              initial={{ y: -80, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ type: 'spring', damping: 16, delay: 0.05 }}
-              style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
-              className="text-center mb-12 select-none"
+      {/* ═══ MAIN SCREEN ═══ */}
+      {screen === 'main' && (
+        <div className="relative h-full flex flex-col items-center justify-center">
+          <div className="text-center mb-12 select-none">
+            <div
+              className="text-[80px] md:text-[130px] font-black leading-none tracking-tighter"
+              style={{
+                background: 'linear-gradient(135deg, #fff 20%, #f59e0b 50%, #ef4444 80%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                filter: 'drop-shadow(0 0 40px rgba(239,68,68,0.4))',
+                letterSpacing: '-4px',
+              }}
             >
-              <div
-                className="text-[80px] md:text-[130px] font-black leading-none tracking-tighter"
-                style={{
-                  background: 'linear-gradient(135deg, #fff 20%, #f59e0b 50%, #ef4444 80%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 0 40px rgba(239,68,68,0.4))',
-                  letterSpacing: '-4px',
-                }}
-              >
-                TURBO
-              </div>
-              <div
-                className="text-[50px] md:text-[80px] font-black leading-none -mt-3"
-                style={{
-                  background: 'linear-gradient(90deg, #a78bfa, #818cf8)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  letterSpacing: '12px',
-                }}
-              >
-                KART
-              </div>
-              {/*               Subtitle */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="mt-4 text-white/30 text-xs md:text-sm tracking-[6px] font-medium uppercase"
-              >
-                ── F1 Grand Prix ──
-              </motion.div>
-            </motion.div>
-
-            {/* Buttons */}
-            <motion.div
-              initial={{ y: 60, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ type: 'spring', damping: 18, delay: 0.2 }}
-              className="flex flex-col items-center gap-3 w-full max-w-xs px-6"
+              TURBO
+            </div>
+            <div
+              className="text-[50px] md:text-[80px] font-black leading-none -mt-3"
+              style={{
+                background: 'linear-gradient(90deg, #a78bfa, #818cf8)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '12px',
+              }}
             >
-              {/* RACE NOW */}
-              <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => setScreen('select')}
-                className="relative w-full overflow-hidden rounded-2xl"
-                style={{ padding: '1px', background: 'linear-gradient(135deg, #f59e0b, #ef4444, #8b5cf6)' }}
+              KART
+            </div>
+            <div className="mt-4 text-white/30 text-xs md:text-sm tracking-[6px] font-medium uppercase">
+              ── F1 Grand Prix ──
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-3 w-full max-w-xs px-6">
+            <button
+              onClick={() => setScreen('select')}
+              className="relative w-full overflow-hidden rounded-2xl"
+              style={{ padding: '1px', background: 'linear-gradient(135deg, #f59e0b, #ef4444, #8b5cf6)' }}
+            >
+              <div className="relative rounded-2xl bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 px-8 py-4 flex items-center justify-center gap-3">
+                <span className="text-xl">🏁</span>
+                <span className="font-black text-xl text-white tracking-widest">RACE NOW</span>
+              </div>
+            </button>
+
+            <div className="grid grid-cols-2 gap-2 w-full">
+              {[
+                { label: 'F1 CAR', sub: kart.name, icon: '🏁', action: () => setScreen('select') },
+                { label: 'DIFFICULTY', sub: diff.label, icon: diff.icon, action: () => setScreen('difficulty') },
+              ].map((b, i) => (
+                <button
+                  key={i}
+                  onClick={b.action}
+                  className="relative overflow-hidden rounded-xl px-4 py-3 text-left"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  <div className="text-lg mb-0.5">{b.icon}</div>
+                  <div className="text-[10px] text-white/35 font-bold tracking-widest">{b.label}</div>
+                  <div className="text-white font-black text-sm truncate">{b.sub}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="absolute bottom-6 flex gap-6 text-white/20 text-xs tracking-widest font-medium">
+            <span>WASD / ARROWS — Drive</span>
+            <span>·</span>
+            <span>SPACE — Use Item</span>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ KART SELECT ═══ */}
+      {screen === 'select' && (
+        <motion.div
+          key="select"
+          initial={{ opacity: 0, x: 80 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -80 }}
+          transition={{ type: 'spring', damping: 22, stiffness: 200 }}
+          className="relative h-full flex flex-col overflow-hidden"
+        >
+          <div className="flex items-center justify-between px-6 pt-5 pb-3">
+            <button
+              onClick={() => setScreen('main')}
+              className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-sm font-bold tracking-widest"
+            >
+              ← BACK
+            </button>
+            <div className="text-white/20 text-xs tracking-[6px] font-bold">SELECT F1 CAR</div>
+            <div className="w-16" />
+          </div>
+
+          <div className="flex-1 flex flex-col md:flex-row gap-0 overflow-hidden">
+            <div className="md:w-1/2 flex flex-col px-6">
+              <div
+                className="flex-1 min-h-[180px] md:min-h-0 rounded-3xl overflow-hidden relative"
+                style={{ background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.15) 0%, rgba(0,0,0,0.6) 100%)' }}
               >
-                <div className="relative rounded-2xl bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 px-8 py-4 flex items-center justify-center gap-3">
-                  <span className="text-xl">🏁</span>
-                  <span className="font-black text-xl text-white tracking-widest">RACE NOW</span>
-                  <motion.div
-                    className="absolute inset-0 bg-white/0 hover:bg-white/10 transition-colors rounded-2xl"
-                    whileHover={{ opacity: 1 }}
-                  />
+                <KartPreview3D kartData={kart} />
+                <div className="absolute bottom-0 left-0 right-0 p-5" style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
+                  <div className="text-[10px] font-bold tracking-[5px] mb-0.5" style={{ color: kart.accent }}>{kart.tagline}</div>
+                  <div className="text-3xl font-black text-white">{kart.name}</div>
+                  <div className="text-xs text-white/40 mt-1">{kart.description}</div>
                 </div>
-              </motion.button>
-
-              <div className="grid grid-cols-2 gap-2 w-full">
+              </div>
+              <div className="mt-4 space-y-2.5 pb-4">
                 {[
-                  { label: 'F1 CAR', sub: kart.name, icon: '🏁', action: () => setScreen('select') },
-                  { label: 'DIFFICULTY', sub: diff.label, icon: diff.icon, action: () => setScreen('difficulty') },
-                ].map((b, i) => (
+                  { label: 'TOP SPEED', val: kart.stats.speed },
+                  { label: 'ACCELERATION', val: kart.stats.accel },
+                  { label: 'HANDLING', val: kart.stats.handling },
+                  { label: 'WEIGHT', val: kart.stats.weight },
+                ].map(s => (
+                  <StatBar key={s.label} label={s.label} value={s.val} accent={kart.accent} />
+                ))}
+              </div>
+            </div>
+
+            <div className="md:w-1/2 flex flex-col px-6 pb-6 gap-3">
+              <div className="grid grid-cols-2 gap-3 flex-1">
+                {KARTS.map((k, i) => (
                   <motion.button
-                    key={i}
-                    whileHover={{ scale: 1.03, y: -1 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={b.action}
-                    className="relative overflow-hidden rounded-xl border border-white/8 bg-white/4 backdrop-blur-xl px-4 py-3 text-left transition-all"
-                    style={{ background: 'rgba(255,255,255,0.04)' }}
+                    key={k.id}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSelectedKart(i)}
+                    className="relative overflow-hidden rounded-2xl p-4 text-left transition-all"
+                    style={{
+                      border: selectedKart === i ? `1.5px solid ${k.accent}` : '1.5px solid rgba(255,255,255,0.06)',
+                      background: selectedKart === i
+                        ? `radial-gradient(ellipse at top left, ${k.hex}22, rgba(0,0,0,0.6))`
+                        : 'rgba(255,255,255,0.02)',
+                      boxShadow: selectedKart === i ? `0 0 30px ${k.hex}22` : 'none',
+                    }}
                   >
-                    <div className="text-lg mb-0.5">{b.icon}</div>
-                    <div className="text-[10px] text-white/35 font-bold tracking-widest">{b.label}</div>
-                    <div className="text-white font-black text-sm truncate">{b.sub}</div>
+                    <div className="relative z-10">
+                      <div className="text-[9px] font-black tracking-[4px] mb-1" style={{ color: k.accent }}>{k.tagline}</div>
+                      <div className="font-black text-white text-base">{k.name}</div>
+                      <div className="text-[10px] text-white/30 mt-1 leading-relaxed">{k.description.split('.')[0]}</div>
+                      <div className="mt-3 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                        <motion.div
+                          animate={{ width: `${k.stats.speed}%` }}
+                          transition={{ duration: 0.5 }}
+                          className="h-full rounded-full"
+                          style={{ background: `linear-gradient(90deg, ${k.hex}66, ${k.hex})` }}
+                        />
+                      </div>
+                    </div>
                   </motion.button>
                 ))}
               </div>
-            </motion.div>
 
-            {/* Controls */}
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}
-              className="absolute bottom-6 flex gap-6 text-white/20 text-xs tracking-widest font-medium"
+              <motion.button
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setScreen('difficulty')}
+                className="rounded-2xl py-4 font-black text-white text-base tracking-widest"
+                style={{ background: `linear-gradient(135deg, ${kart.hex}, ${kart.accent}88)`, boxShadow: `0 8px 32px ${kart.hex}40` }}
+              >
+                CONTINUE →
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ═══ DIFFICULTY ═══ */}
+      {screen === 'difficulty' && (
+        <motion.div
+          key="difficulty"
+          initial={{ opacity: 0, x: 80 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -80 }}
+          transition={{ type: 'spring', damping: 22, stiffness: 200 }}
+          className="relative h-full flex flex-col"
+        >
+          <div className="flex items-center justify-between px-6 pt-5 pb-3">
+            <button
+              onClick={() => setScreen('select')}
+              className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-sm font-bold tracking-widest"
             >
-              <span>WASD / ARROWS — Drive</span>
-              <span>·</span>
-              <span>SPACE — Use Item</span>
-            </motion.div>
-          </motion.div>
-        )}
+              ← BACK
+            </button>
+            <div className="text-white/20 text-xs tracking-[6px] font-bold">DIFFICULTY</div>
+            <div className="w-16" />
+          </div>
 
-        {/* ═══════════════ KART SELECT ═══════════════ */}
-        {screen === 'select' && (
-          <motion.div
-            key="select"
-            initial={{ opacity: 0, x: 80 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -80 }}
-            transition={{ type: 'spring', damping: 22, stiffness: 200 }}
-            className="relative h-full flex flex-col overflow-hidden"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-5 pb-3">
-              <motion.button
-                whileHover={{ x: -3 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setScreen('main')}
-                className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-sm font-bold tracking-widest"
-              >
-                ← BACK
-              </motion.button>
-              <div className="text-white/20 text-xs tracking-[6px] font-bold">SELECT F1 CAR</div>
-              <div className="w-16" />
-            </div>
-
-            <div className="flex-1 flex flex-col md:flex-row gap-0 overflow-hidden">
-              {/* Left: 3D + stats */}
-              <div className="md:w-1/2 flex flex-col px-6">
-                {/* 3D Viewer */}
-                <div
-                  className="flex-1 min-h-[180px] md:min-h-0 rounded-3xl overflow-hidden relative"
-                  style={{ background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.15) 0%, rgba(0,0,0,0.6) 100%)' }}
-                >
-                  <KartPreview3D kartData={kart} />
-                  {/* Kart info overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 p-5" style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
-                    <div className="text-[10px] font-bold tracking-[5px] mb-0.5" style={{ color: kart.accent }}>{kart.tagline}</div>
-                    <div className="text-3xl font-black text-white">{kart.name}</div>
-                    <div className="text-xs text-white/40 mt-1">{kart.description}</div>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="mt-4 space-y-2.5 pb-4">
-                  {[
-                    { label: 'TOP SPEED', val: kart.stats.speed },
-                    { label: 'ACCELERATION', val: kart.stats.accel },
-                    { label: 'HANDLING', val: kart.stats.handling },
-                    { label: 'WEIGHT', val: kart.stats.weight },
-                  ].map(s => (
-                    <StatBar key={s.label} label={s.label} value={s.val} accent={kart.accent} />
-                  ))}
-                </div>
+          <div className="flex-1 flex flex-col justify-center px-6 gap-4 pb-6">
+            <div className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ background: `${kart.hex}22`, border: `1px solid ${kart.hex}44` }}>🏎️</div>
+              <div>
+                <div className="font-black text-white text-sm">{kart.name}</div>
+                <div className="text-[10px] text-white/30 tracking-widest font-bold">{kart.tagline}</div>
               </div>
-
-              {/* Right: kart tiles */}
-              <div className="md:w-1/2 flex flex-col px-6 pb-6 gap-3">
-                <div className="grid grid-cols-2 gap-3 flex-1">
-                  {KARTS.map((k, i) => (
-                    <motion.button
-                      key={k.id}
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedKart(i)}
-                      className="relative overflow-hidden rounded-2xl p-4 text-left transition-all border"
-                      style={{
-                        border: selectedKart === i ? `1.5px solid ${k.accent}` : '1.5px solid rgba(255,255,255,0.06)',
-                        background: selectedKart === i
-                          ? `radial-gradient(ellipse at top left, ${k.hex}22, rgba(0,0,0,0.6))`
-                          : 'rgba(255,255,255,0.02)',
-                        boxShadow: selectedKart === i ? `0 0 30px ${k.hex}22` : 'none',
-                      }}
-                    >
-                      {selectedKart === i && (
-                        <motion.div layoutId="kartSelected" className="absolute inset-0 rounded-2xl" style={{ background: `radial-gradient(ellipse at top left, ${k.hex}15, transparent)` }} />
-                      )}
-                      <div className="relative z-10">
-                        <div className="text-[9px] font-black tracking-[4px] mb-1" style={{ color: k.accent }}>{k.tagline}</div>
-                        <div className="font-black text-white text-base">{k.name}</div>
-                        <div className="text-[10px] text-white/30 mt-1 leading-relaxed">{k.description.split('.')[0]}</div>
-                        <div className="mt-3 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                          <motion.div
-                            animate={{ width: `${k.stats.speed}%` }}
-                            transition={{ duration: 0.5 }}
-                            className="h-full rounded-full"
-                            style={{ background: `linear-gradient(90deg, ${k.hex}66, ${k.hex})` }}
-                          />
-                        </div>
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setScreen('difficulty')}
-                  className="rounded-2xl py-4 font-black text-white text-base tracking-widest"
-                  style={{ background: `linear-gradient(135deg, ${kart.hex}, ${kart.accent}88)`, boxShadow: `0 8px 32px ${kart.hex}40` }}
-                >
-                  CONTINUE →
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ═══════════════ DIFFICULTY ═══════════════ */}
-        {screen === 'difficulty' && (
-          <motion.div
-            key="difficulty"
-            initial={{ opacity: 0, x: 80 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -80 }}
-            transition={{ type: 'spring', damping: 22, stiffness: 200 }}
-            className="relative h-full flex flex-col"
-          >
-            <div className="flex items-center justify-between px-6 pt-5 pb-3">
-              <motion.button
-                whileHover={{ x: -3 }}
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={() => setScreen('select')}
-                className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-sm font-bold tracking-widest"
+                className="ml-auto text-xs text-white/30 hover:text-white/60 transition-colors font-bold tracking-widest"
               >
-                ← BACK
-              </motion.button>
-              <div className="text-white/20 text-xs tracking-[6px] font-bold">DIFFICULTY</div>
-              <div className="w-16" />
+                CHANGE
+              </button>
             </div>
 
-            <div className="flex-1 flex flex-col justify-center px-6 gap-4 pb-6">
-              {/* Selected kart badge */}
-              <div className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-2 border border-white/6" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ background: `${kart.hex}22`, border: `1px solid ${kart.hex}44` }}>🏎️</div>
-                <div>
-                  <div className="font-black text-white text-sm">{kart.name}</div>
-                  <div className="text-[10px] text-white/30 tracking-widest font-bold">{kart.tagline}</div>
-                </div>
-                <motion.button
-                  onClick={() => setScreen('select')}
-                  className="ml-auto text-xs text-white/30 hover:text-white/60 transition-colors font-bold tracking-widest"
-                >
-                  CHANGE
-                </motion.button>
-              </div>
-
-              {DIFFICULTIES.map((d, i) => (
-                <motion.button
-                  key={d.id}
-                  whileHover={{ x: 4 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setSelectedDiff(i)}
-                  className={`relative overflow-hidden rounded-2xl p-5 text-left border transition-all ${d.border} ${selectedDiff === i ? 'shadow-lg ' + d.glow : ''}`}
-                  style={{ background: selectedDiff === i ? `linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.4))` : 'rgba(255,255,255,0.02)' }}
-                >
-                  {selectedDiff === i && (
-                    <motion.div layoutId="diffSelected" className={`absolute inset-0 bg-gradient-to-r ${d.bg} rounded-2xl`} />
-                  )}
-                  <div className="relative z-10 flex items-center gap-4">
-                    <div className="text-3xl">{d.icon}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="font-black text-white text-xl tracking-widest">{d.label}</span>
-                        {selectedDiff === i && (
-                          <span className={`${d.tag} text-[9px] text-white font-black px-2 py-0.5 rounded-full tracking-widest`}>SELECTED</span>
-                        )}
-                      </div>
-                      <div className="text-white/40 text-xs mt-0.5 font-medium">{d.desc}</div>
-                    </div>
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${selectedDiff === i ? 'border-white bg-white/20' : 'border-white/15'}`}>
-                      {selectedDiff === i && <div className="w-2 h-2 rounded-full bg-white" />}
-                    </div>
-                  </div>
-                </motion.button>
-              ))}
-
-              {/* Start */}
+            {DIFFICULTIES.map((d, i) => (
               <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handleStart}
-                className="mt-2 rounded-2xl py-5 font-black text-white text-xl tracking-widest relative overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, #dc2626, #ea580c, #d97706)', boxShadow: '0 12px 40px rgba(220,38,38,0.4)' }}
+                key={d.id}
+                whileHover={{ x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedDiff(i)}
+                className={`relative overflow-hidden rounded-2xl p-5 text-left border transition-all ${d.border} ${selectedDiff === i ? 'shadow-lg ' + d.glow : ''}`}
+                style={{ background: selectedDiff === i ? `linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.4))` : 'rgba(255,255,255,0.02)' }}
               >
-                <motion.div
-                  className="absolute inset-0 bg-white/10"
-                  animate={{ x: ['-100%', '200%'] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                  style={{ skewX: -20, width: '40%' }}
-                />
-                <span className="relative z-10">🏁 START RACE</span>
+                {selectedDiff === i && (
+                  <motion.div layoutId="diffSelected" className={`absolute inset-0 bg-gradient-to-r ${d.bg} rounded-2xl`} />
+                )}
+                <div className="relative z-10 flex items-center gap-4">
+                  <div className="text-3xl">{d.icon}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <span className="font-black text-white text-xl tracking-widest">{d.label}</span>
+                      {selectedDiff === i && (
+                        <span className={`${d.tag} text-[9px] text-white font-black px-2 py-0.5 rounded-full tracking-widest`}>SELECTED</span>
+                      )}
+                    </div>
+                    <div className="text-white/40 text-xs mt-0.5 font-medium">{d.desc}</div>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${selectedDiff === i ? 'border-white bg-white/20' : 'border-white/15'}`}>
+                    {selectedDiff === i && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
+                </div>
               </motion.button>
-            </div>
-          </motion.div>
-        )}
+            ))}
 
-      </AnimatePresence>
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleStart}
+              className="mt-2 rounded-2xl py-5 font-black text-white text-xl tracking-widest relative overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, #dc2626, #ea580c, #d97706)', boxShadow: '0 12px 40px rgba(220,38,38,0.4)' }}
+            >
+              <motion.div
+                className="absolute inset-0 bg-white/10"
+                animate={{ x: ['-100%', '200%'] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                style={{ skewX: -20, width: '40%' }}
+              />
+              <span className="relative z-10">🏁 START RACE</span>
+            </motion.button>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

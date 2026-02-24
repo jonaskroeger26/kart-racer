@@ -315,25 +315,32 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
   const initGame = useCallback(() => {
     if (!mountRef.current) return;
     const container = mountRef.current;
-    let width = container.clientWidth;
-    let height = container.clientHeight;
-    if (!width || !height) {
-      width = window.innerWidth;
-      height = window.innerHeight;
-    }
+    // Wait a frame to ensure the container is in the DOM and has dimensions
+    const width = container.clientWidth || window.innerWidth;
+    const height = container.clientHeight || window.innerHeight;
 
     const diffSettings = {
-      easy:   { aiSpeed: 0.55, aiVar: 0.08, speedMax: 120, accel: 2.2 },
-      medium: { aiSpeed: 0.72, aiVar: 0.12, speedMax: 110, accel: 1.8 },
-      hard:   { aiSpeed: 0.95, aiVar: 0.06, speedMax: 100, accel: 1.5 },
+      easy:   { aiSpeed: 0.55, aiVar: 0.08, speedMax: 120 },
+      medium: { aiSpeed: 0.72, aiVar: 0.12, speedMax: 110 },
+      hard:   { aiSpeed: 0.95, aiVar: 0.06, speedMax: 100 },
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
+    // Speed is stored in km/h. Track step per frame = speed * TRACK_SCALE.
+    // TRACK_SCALE tuned so 300 km/h feels like real racing pace on this circuit.
+    // Real F1 accel: 0→100 in ~2.5s (150 frames), 0→300 in ~9s (540 frames).
+    // Thrust-drag model: dV = thrust - drag*V^2  per frame.
+    // At terminal (300 km/h): thrust = drag * 300^2  →  drag = thrust / 90000
+    // For 0→100 in 150 frames: roughly thrust ≈ 1.3 km/h/frame early on.
+    // thrust=1.35, drag=1.35/90000=0.000015 → terminal ~300 km/h, ~2.5s to 100 ✓
+    const TRACK_SCALE = 0.000006; // trackT units per km/h per frame
+
     const kartPhysics = {
-      speeder:  { speedMax: diff.speedMax * 1.15, accel: diff.accel * 1.1, turn: 0.055, friction: 0.8 },
-      balanced: { speedMax: diff.speedMax,        accel: diff.accel,       turn: 0.060, friction: 0.65 },
-      heavy:    { speedMax: diff.speedMax * 0.88, accel: diff.accel * 0.9, turn: 0.045, friction: 0.5 },
-      offroad:  { speedMax: diff.speedMax * 0.95, accel: diff.accel * 1.05,turn: 0.065, friction: 0.65 },
+      //               thrust   drag         turn    friction  braking  speedMax
+      speeder:  { thrust: 1.45, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 28, speedMax: diff.speedMax * 1.08 },
+      balanced: { thrust: 1.35, drag: 0.0000150, turn: 0.060, friction: 0.7, braking: 25, speedMax: diff.speedMax },
+      heavy:    { thrust: 1.20, drag: 0.0000148, turn: 0.045, friction: 0.55, braking: 22, speedMax: diff.speedMax * 0.92 },
+      offroad:  { thrust: 1.30, drag: 0.0000152, turn: 0.065, friction: 0.65, braking: 24, speedMax: diff.speedMax * 0.96 },
     };
     const physics = kartPhysics[kartType] || kartPhysics.balanced;
 
@@ -626,17 +633,79 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
     const aiColors = [0xff6600, 0x1155ff, 0x22cc55, 0xffcc00, 0xcc44ff, 0xff2222, 0x00ccff];
     const aiKarts = [];
-    for (let i=0;i<NUM_AI;i++) {
+
+    // AI top speed in same units as player (physics.speedMax scale)
+    const aiBaseSpeed = physics.speedMax * diff.aiSpeed;
+
+    // Optimal racing line offsets per track-T zone (apex inside, entry/exit outside)
+    // Each entry: [tStart, tEnd, apexOffset] — offset in track-width units (-1=left edge, +1=right edge)
+    const racingLineZones = [
+      // Main straight — stay centre-right
+      { s: 0.00, e: 0.08, apex: 3 },
+      // T1 braking / entry — wide left
+      { s: 0.08, e: 0.12, apex: -5 },
+      // T1 apex — cut right
+      { s: 0.12, e: 0.18, apex: 6 },
+      // T1 exit — open left
+      { s: 0.18, e: 0.22, apex: -4 },
+      // Esses — alternate
+      { s: 0.22, e: 0.28, apex: 4 },
+      { s: 0.28, e: 0.32, apex: -4 },
+      // T4 sweep — wide right, apex left
+      { s: 0.32, e: 0.38, apex: -5 },
+      { s: 0.38, e: 0.42, apex: 5 },
+      // Back straight — centre
+      { s: 0.42, e: 0.55, apex: 0 },
+      // Hairpin entry — wide right
+      { s: 0.55, e: 0.60, apex: 5 },
+      // Hairpin apex — cut hard left
+      { s: 0.60, e: 0.66, apex: -6 },
+      // Hairpin exit — sweep right
+      { s: 0.66, e: 0.72, apex: 5 },
+      // Twisty return
+      { s: 0.72, e: 0.78, apex: -4 },
+      { s: 0.78, e: 0.84, apex: 4 },
+      // Return straight
+      { s: 0.84, e: 1.00, apex: 0 },
+    ];
+
+    function getRacingLineOffset(t) {
+      for (const z of racingLineZones) {
+        if (t >= z.s && t < z.e) return z.apex;
+      }
+      return 0;
+    }
+
+    // AI personalities
+    const personalities = [
+      { name: 'aggressive', rbStrength: 0.055, rbCap: 0.22, topSpeedMult: 1.06, racingLineFidelity: 0.7, itemUseGap: 0.04, laneWander: 0.02 },
+      { name: 'defensive',  rbStrength: 0.030, rbCap: 0.12, topSpeedMult: 0.96, racingLineFidelity: 0.95, itemUseGap: 0.08, laneWander: 0.01 },
+      { name: 'consistent', rbStrength: 0.040, rbCap: 0.16, topSpeedMult: 1.00, racingLineFidelity: 0.88, itemUseGap: 0.06, laneWander: 0.015 },
+      { name: 'erratic',    rbStrength: 0.060, rbCap: 0.20, topSpeedMult: 1.02, racingLineFidelity: 0.55, itemUseGap: 0.02, laneWander: 0.04 },
+    ];
+
+    for (let i = 0; i < NUM_AI; i++) {
       const car = createF1Car(aiColors[i]);
       scene.add(car);
+      const startT = (i + 1) * 0.012;
+      const personality = personalities[i % personalities.length];
+      const topSpeed = aiBaseSpeed * personality.topSpeedMult * (0.95 + Math.random() * 0.10);
       aiKarts.push({
         mesh: car,
-        trackT: -(i+1)*0.016,
-        speed: diff.aiSpeed+(Math.random()-0.5)*diff.aiVar,
-        offset: (Math.random()-0.5)*6,
+        trackT: startT,
+        lastT: startT,
+        speed: topSpeed * 0.3,
+        topSpeed,
+        offset: (i % 2 === 0 ? 1 : -1) * (2 + (i % 3) * 1.2),
+        targetOffset: 0,
         lap: 0,
-        lastT: -(i+1)*0.016,
-        wobble: Math.random()*Math.PI*2,
+        wobble: Math.random() * Math.PI * 2,
+        personality,
+        hasItem: false,
+        itemCooldown: 0,
+        // Rubber-band noise phase — each AI has unique phase so they don't pulse together
+        rbPhase: Math.random() * Math.PI * 2,
+        rbNoiseT: 0,
       });
     }
 
@@ -672,10 +741,19 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
       if (raceStarted && !ps.finished) {
         const keys = keysRef.current;
-        const SPEED_MAX = physics.speedMax*(ps.boost>0?1.75:1);
-        if      (keys['ArrowUp']||keys['KeyW'])   ps.speed = Math.min(SPEED_MAX, ps.speed+physics.accel);
-        else if (keys['ArrowDown']||keys['KeyS'])  ps.speed = Math.max(-0.3, ps.speed-physics.friction*4);
-        else                                        ps.speed = Math.max(0, ps.speed-physics.friction);
+        const boostMult = ps.boost > 0 ? 1.35 : 1;
+        const SPEED_MAX = physics.speedMax * boostMult;
+
+        if (keys['ArrowUp'] || keys['KeyW']) {
+          // F1 thrust-drag model: fast off the line, tapers as aero drag grows (∝ v²)
+          const drag = physics.drag * ps.speed * ps.speed;
+          const thrust = physics.thrust * boostMult;
+          ps.speed = Math.min(SPEED_MAX, ps.speed + thrust - drag);
+        } else if (keys['ArrowDown'] || keys['KeyS']) {
+          ps.speed = Math.max(-40, ps.speed - physics.braking);
+        } else {
+          ps.speed = Math.max(0, ps.speed - physics.friction);
+        }
 
         const si = (keys['ArrowLeft']||keys['KeyA'])?-1:(keys['ArrowRight']||keys['KeyD'])?1:0;
         ps.lateralOffset += si*physics.turn*Math.max(0.3,ps.speed/physics.speedMax)*2;
@@ -685,7 +763,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         if (ps.boost>0) ps.boost--;
 
         ps.lastT = ps.trackT;
-        ps.trackT = (ps.trackT + ps.speed*0.000018+1)%1;
+        ps.trackT = (ps.trackT + ps.speed * TRACK_SCALE + 1) % 1;
         if (ps.lastT>0.97&&ps.trackT<0.03) {
           ps.lap++;
           if (ps.lap>=LAPS_TO_WIN) { ps.finished=true; ps.finishTime=(Date.now()-startTime)/1000; }
@@ -722,29 +800,121 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         setTimeout(()=>scene.remove(fl),150);
       }
 
-      // AI
+      // ── AI MOVEMENT ──
+      if (raceStarted) {
+        const playerProgress = ps.lap + ps.trackT;
+
+        aiKarts.forEach(ai => {
+          const p = ai.personality;
+          ai.wobble += 0.008;
+          ai.rbNoiseT += 0.003;
+          if (ai.itemCooldown > 0) ai.itemCooldown--;
+
+          const aiProgress = ai.lap + ai.trackT;
+          const gap = playerProgress - aiProgress; // positive = player ahead
+
+          // ── RUBBER BAND ──
+          // Natural-feeling RB: slow sine drift + occasional "push" moments
+          // Each AI has its own noise phase so they don't all surge together
+          const rbNoise = Math.sin(ai.rbNoiseT + ai.rbPhase) * 0.4 + Math.sin(ai.rbNoiseT * 2.3 + ai.rbPhase) * 0.15;
+          const rawRb = gap * physics.speedMax * p.rbStrength * (1 + rbNoise * 0.3);
+          const rb = Math.max(-physics.speedMax * 0.06, Math.min(physics.speedMax * p.rbCap, rawRb));
+          // Smooth speed convergence — aggressive drivers react faster
+          const convergence = p.name === 'aggressive' ? 0.055 : p.name === 'erratic' ? 0.07 : 0.035;
+          const targetSpeed = ai.topSpeed + rb;
+          ai.speed += (targetSpeed - ai.speed) * convergence;
+
+          // ── BRAKING ZONES (corner curvature detection) ──
+          // Approximate curvature by comparing tangents ahead
+          const tAhead = (ai.trackT + 0.015) % 1;
+          const tang1 = trackCurve.getTangentAt(ai.trackT);
+          const tang2 = trackCurve.getTangentAt(tAhead);
+          const curvature = 1 - tang1.dot(tang2); // 0=straight, higher=corner
+          // Slow down for corners proportional to curvature and personality
+          const cornerBrake = curvature * physics.speedMax * (p.name === 'aggressive' ? 0.6 : p.name === 'erratic' ? 0.5 : 0.8);
+          const cornerTargetSpeed = Math.max(ai.topSpeed * 0.45, ai.topSpeed - cornerBrake);
+          if (ai.speed > cornerTargetSpeed) {
+            ai.speed -= (ai.speed - cornerTargetSpeed) * 0.08;
+          }
+
+          // ── VARIATION ──
+          const variation = Math.sin(ai.wobble * 0.7) * physics.speedMax * diff.aiVar * 0.03;
+
+          ai.lastT = ai.trackT;
+          const step = (ai.speed + variation) * TRACK_SCALE;
+          ai.trackT = (ai.trackT + step + 1) % 1;
+          if (ai.lastT > 0.97 && ai.trackT < 0.03) ai.lap++;
+
+          // ── RACING LINE ──
+          const racingApex = getRacingLineOffset(ai.trackT);
+          // Personality fidelity: aggressive & defensive follow line well, erratic less so
+          const wanderNoise = (Math.sin(ai.wobble * 0.18) * 2 + Math.sin(ai.wobble * 0.41) * 1) * p.laneWander * half;
+          ai.targetOffset = racingApex * p.racingLineFidelity + wanderNoise;
+          ai.targetOffset = Math.max(-half * 0.82, Math.min(half * 0.82, ai.targetOffset));
+          // Smoothly steer toward racing line target
+          ai.offset += (ai.targetOffset - ai.offset) * 0.04;
+
+          // ── ITEM PICKUP ──
+          itemBoxes.forEach(box => {
+            if (box.userData.active && ai.mesh.position.distanceTo(box.position) < 3.5 && !ai.hasItem) {
+              ai.hasItem = true;
+              box.userData.active = false;
+              box.userData.respawnTimer = 400;
+            }
+          });
+
+          // ── ITEM USAGE (strategic) ──
+          if (ai.hasItem && ai.itemCooldown <= 0) {
+            const distToPlayer = Math.abs(gap);
+            const shouldUse =
+              // Aggressive: use when close behind player
+              (p.name === 'aggressive' && gap > -0.05 && gap < p.itemUseGap) ||
+              // Defensive: use when player is right behind (gap slightly negative)
+              (p.name === 'defensive' && gap > -p.itemUseGap && gap < 0.01) ||
+              // Consistent: use when close to player either way
+              (p.name === 'consistent' && distToPlayer < p.itemUseGap) ||
+              // Erratic: random use
+              (p.name === 'erratic' && Math.random() < 0.002);
+
+            if (shouldUse) {
+              ai.hasItem = false;
+              ai.speed = Math.min(ai.speed * 1.3, ai.topSpeed * 1.3);
+              ai.itemCooldown = BOOST_DURATION * 2;
+              // Visual boost flame
+              const aPos = trackCurve.getPointAt(ai.trackT);
+              const aDir = trackCurve.getTangentAt(ai.trackT);
+              const fl = new THREE.Mesh(
+                new THREE.SphereGeometry(0.3, 5, 5),
+                new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.8 })
+              );
+              fl.position.copy(aPos).addScaledVector(aDir, -2);
+              fl.position.y += 0.3;
+              scene.add(fl);
+              setTimeout(() => scene.remove(fl), 300);
+            }
+          }
+        });
+      }
+
       aiKarts.forEach(ai => {
-        if (raceStarted) {
-          ai.wobble+=0.015;
-          ai.lastT=ai.trackT;
-          ai.trackT=(ai.trackT+(ai.speed+Math.sin(ai.wobble)*diff.aiVar)*0.000018+1)%1;
-          if (ai.lastT>0.97&&ai.trackT<0.03) ai.lap++;
-        }
-        const nt=(ai.trackT+1)%1;
-        const aPos =trackCurve.getPointAt(nt);
-        const aNext=trackCurve.getPointAt((nt+0.001)%1);
-        const aDir =new THREE.Vector3().subVectors(aNext,aPos).normalize();
-        const aRight=new THREE.Vector3().crossVectors(aDir,new THREE.Vector3(0,1,0)).normalize();
-        ai.mesh.position.copy(aPos).add(aRight.clone().multiplyScalar(ai.offset+Math.sin(ai.wobble*0.7)*1.8));
-        ai.mesh.position.y+=0.12;
+        const nt = (ai.trackT + 1) % 1;
+        const aPos  = trackCurve.getPointAt(nt);
+        const aNext = trackCurve.getPointAt((nt + 0.002) % 1);
+        const aDir  = new THREE.Vector3().subVectors(aNext, aPos).normalize();
+        const aRight = new THREE.Vector3().crossVectors(aDir, new THREE.Vector3(0, 1, 0)).normalize();
+        ai.mesh.position.copy(aPos).addScaledVector(aRight, ai.offset);
+        ai.mesh.position.y += 0.12;
         ai.mesh.lookAt(ai.mesh.position.clone().add(aDir));
         ai.mesh.rotateY(Math.PI);
       });
 
-      // Position calc
-      const all=[{t:ps.trackT,lap:ps.lap,isPlayer:true},...aiKarts.map(a=>({t:a.trackT,lap:a.lap,isPlayer:false}))];
-      all.sort((a,b)=>(b.lap+b.t)-(a.lap+a.t));
-      ps.position=all.findIndex(r=>r.isPlayer)+1;
+      // Position calc — sort by total progress (lap + fractional T)
+      const all = [
+        { progress: ps.lap + ps.trackT, isPlayer: true },
+        ...aiKarts.map(a => ({ progress: a.lap + a.trackT, isPlayer: false }))
+      ];
+      all.sort((a, b) => b.progress - a.progress);
+      ps.position = all.findIndex(r => r.isPlayer) + 1;
 
       // Camera
       const camBack = pDir.clone().multiplyScalar(-10); camBack.y=5.5;
@@ -787,7 +957,17 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
   }, [kartColor, kartType, difficulty]);
 
-  useEffect(() => { const c=initGame(); return c; }, [initGame]);
+  useEffect(() => {
+    // Use rAF to ensure the DOM is painted and container has real dimensions
+    let cleanup;
+    const rafId = requestAnimationFrame(() => {
+      cleanup = initGame();
+    });
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (cleanup) cleanup();
+    };
+  }, [initGame]);
 
   useEffect(() => {
     const kd=(e)=>{ keysRef.current[e.code]=true; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault(); };

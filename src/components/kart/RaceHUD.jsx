@@ -214,7 +214,7 @@ function Minimap({ playerT, aiPositions }) {
 
   return (
     <div className="rounded-2xl p-2" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.06)' }}>
-      <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`}>
+      <svg width={100} height={100} viewBox="0 0 100 100">
         {/* Track */}
         <path d={d} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" strokeLinejoin="round" />
         <path d={d} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="3" strokeLinejoin="round" />
@@ -231,7 +231,7 @@ function Minimap({ playerT, aiPositions }) {
   );
 }
 
-export default function RaceHUD({ gameState }) {
+export default function RaceHUD({ gameState, onBackToMenu }) {
   if (!gameState) return null;
   const { speed, lap, totalLaps, position, totalRacers, hasItem, boost, countdown, raceTime, finished, finishTime, playerTrackT, aiPositions } = gameState;
 
@@ -370,14 +370,14 @@ export default function RaceHUD({ gameState }) {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => window.location.reload()}
+                    onClick={onBackToMenu}
                     className="flex-1 py-3.5 rounded-xl font-black text-sm tracking-widest text-white/60 hover:text-white transition-colors"
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
                   >
                     MENU
                   </button>
                   <button
-                    onClick={() => window.location.reload()}
+                    onClick={onBackToMenu}
                     className="flex-1 py-3.5 rounded-xl font-black text-sm tracking-widest text-white"
                     style={{ background: 'linear-gradient(135deg, #dc2626, #ea580c)', boxShadow: '0 8px 24px rgba(220,38,38,0.4)' }}
                   >
