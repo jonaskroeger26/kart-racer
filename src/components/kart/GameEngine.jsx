@@ -140,10 +140,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const LATERAL_SCALE = 550 * 0.0000028;
 
     const kartPhysics = {
-      speeder:  { thrust: 5.2, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 28, speedMax: diff.speedMax * 1.08 },
-      balanced: { thrust: 4.8, drag: 0.0000150, turn: 0.060, friction: 0.7, braking: 25, speedMax: diff.speedMax },
-      heavy:    { thrust: 4.2, drag: 0.0000148, turn: 0.045, friction: 0.55, braking: 22, speedMax: diff.speedMax * 0.92 },
-      offroad:  { thrust: 4.5, drag: 0.0000152, turn: 0.065, friction: 0.65, braking: 24, speedMax: diff.speedMax * 0.96 },
+      speeder:  { thrust: 1.08, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 5.5, speedMax: diff.speedMax * 1.08 },
+      balanced: { thrust: 1.0,  drag: 0.0000150, turn: 0.060, friction: 0.7, braking: 5,   speedMax: diff.speedMax },
+      heavy:    { thrust: 0.88, drag: 0.0000148, turn: 0.045, friction: 0.55, braking: 4.5, speedMax: diff.speedMax * 0.92 },
+      offroad:  { thrust: 0.95, drag: 0.0000152, turn: 0.065, friction: 0.65, braking: 5,   speedMax: diff.speedMax * 0.96 },
     };
     const physics = kartPhysics[kartType] || kartPhysics.balanced;
 
@@ -601,7 +601,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         } else if (keys['ArrowDown'] || keys['KeyS']) {
           ps.speed = Math.max(-40, ps.speed - physics.braking);
         } else {
-          const engineBraking = 2.2;
+          const engineBraking = 1.4;
           const drag = physics.drag * ps.speed * ps.speed;
           ps.speed = Math.max(0, ps.speed - engineBraking - drag);
         }
