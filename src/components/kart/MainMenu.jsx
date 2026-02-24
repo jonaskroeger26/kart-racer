@@ -263,24 +263,6 @@ export default function MainMenu({ onStart }) {
       {/* ═══ MAIN SCREEN ═══ */}
       {screen === 'main' && (
         <div className="relative h-full flex flex-col items-center justify-center">
-          {/* Sketchfab F1 car showcase — top right corner */}
-          <div
-            className="absolute top-4 right-4 rounded-2xl overflow-hidden z-10 shadow-2xl"
-            style={{ width: 260, height: 180, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.5)' }}
-          >
-            <iframe
-              title="F1 2026 Audi R26 (Launch version)"
-              frameBorder="0"
-              allowFullScreen
-              allow="autoplay; fullscreen; xr-spatial-tracking"
-              src="https://sketchfab.com/models/f24a170515b6453a93feecbeec75f27a/embed?autostart=1&ui_hint=0&ui_infos=0&ui_watermark=0&ui_controls=0&dnt=1"
-              style={{ width: '100%', height: '100%' }}
-            />
-            <div className="absolute bottom-0 left-0 right-0 px-2 py-1 flex items-center gap-1" style={{ background: 'rgba(0,0,0,0.7)' }}>
-              <span className="text-[9px] text-white/40 tracking-widest font-bold">F1 2026 AUDI R26</span>
-            </div>
-          </div>
-
           <div className="text-center mb-12 select-none">
             <div
               className="text-[80px] md:text-[130px] font-black leading-none tracking-tighter"
