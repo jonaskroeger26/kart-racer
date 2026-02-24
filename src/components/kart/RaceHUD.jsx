@@ -231,7 +231,7 @@ function Minimap({ playerT, aiPositions }) {
   );
 }
 
-export default function RaceHUD({ gameState }) {
+export default function RaceHUD({ gameState, onBackToMenu }) {
   if (!gameState) return null;
   const { speed, lap, totalLaps, position, totalRacers, hasItem, boost, countdown, raceTime, finished, finishTime, playerTrackT, aiPositions } = gameState;
 
