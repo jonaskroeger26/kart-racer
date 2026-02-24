@@ -355,17 +355,17 @@ export default function MainMenu({ onStart }) {
               </div>
             </div>
 
-            {/* Controls */}
-            <div className="absolute bottom-6 flex gap-6 text-white/20 text-xs tracking-widest font-medium">
-              <span>WASD / ARROWS — Drive</span>
-              <span>·</span>
-              <span>SPACE — Use Item</span>
-            </div>
+          {/* Controls */}
+          <div className="absolute bottom-6 flex gap-6 text-white/20 text-xs tracking-widest font-medium">
+            <span>WASD / ARROWS — Drive</span>
+            <span>·</span>
+            <span>SPACE — Use Item</span>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ═══════════════ KART SELECT ═══════════════ */}
-        {screen === 'select' && (
+      {/* ═══════════════ KART SELECT ═══════════════ */}
+      {screen === 'select' && (
           <motion.div
             key="select"
             initial={{ opacity: 0, x: 80 }}
