@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 const TRACK_WIDTH = 20;
 const BOOST_DURATION = 120;
 const NUM_AI = 8;
-const RED_LIGHTS_DURATION = 7; // F1 style: lights on 1-5, hold, then all out = go
+const RED_LIGHTS_DURATION = 7;
 const LAPS_TO_WIN = 3;
 const OFF_TRACK_RESPAWN_SEC = 2;
 const COLLISION_DIST = 10;
@@ -15,20 +15,22 @@ const PIT_ZONE_T_START = 0.96;
 const PIT_ZONE_T_END = 0.04;
 const PIT_STOP_DURATION_SEC = 2.5;
 
-// Oval from ellipse — 10x longer lap; no self-intersect.
+// F1-style staggered grid constants
+const GRID_LATERAL = 5;
+const gridTrackTOffset = 0.0006;
+
 function createTrackPath() {
-  const a = 2800; // half-width (x) — 10x for much longer lap
-  const b = 2000; // half-length (z)
+  const a = 2800;
+  const b = 2000;
   const n = 48;
   const pts = [];
   for (let i = 0; i < n; i++) {
-    const t = (i / n) * Math.PI * 2 - Math.PI / 2; // start at bottom
+    const t = (i / n) * Math.PI * 2 - Math.PI / 2;
     const x = a * Math.cos(t);
     const z = b * Math.sin(t);
     const y = 0.12 * Math.sin(t * 2);
     pts.push([x, y, z]);
   }
-
   return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.3);
 }
 
@@ -81,7 +83,6 @@ function loadRB21Car() {
   });
 }
 
-// Only tint livery/body parts; leave wheels, driver, carbon, rubber, etc. unchanged.
 function isLiveryPart(meshName, matName) {
   const n = (meshName || '').toLowerCase();
   const m = (matName || '').toLowerCase();
@@ -135,8 +136,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
-    const TRACK_SCALE = 0.00000028; // 10x smaller so lap is 10x longer
-    const LATERAL_SCALE = 550 * 0.0000028; // keep turning feel same as before
+    const TRACK_SCALE = 0.00000028;
+    const LATERAL_SCALE = 550 * 0.0000028;
 
     const kartPhysics = {
       speeder:  { thrust: 5.2, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 28, speedMax: diff.speedMax * 1.08 },
@@ -288,7 +289,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     scene.add(buildMesh(gV,  gI,  grassMat, 0));
     scene.add(buildMesh(wV,  wI,  whiteMat, 2));
 
-    // ── METAL FENCE BARRIERS (Nürburgring-style guardrails) ──
+    // ── METAL FENCE BARRIERS ──
     const fencePostMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, metalness: 0.85, roughness: 0.35 });
     const fenceRailMat = new THREE.MeshStandardMaterial({ color: 0x5c5c5c, metalness: 0.8, roughness: 0.4 });
     const fenceOffset = half + CURB + GRASS_W - 1;
@@ -361,11 +362,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     gantryBeam.lookAt(gantryBeam.position.x+startTang.x, gantryBeam.position.y, gantryBeam.position.z+startTang.z);
     scene.add(gantryBeam);
 
-    // F1-style staggered grid constants (used for boxes and AI)
-    const GRID_LATERAL = 5;       // meters each side of center (P1 left = -5, P2 right = +5)
-    const gridTrackTOffset = 0.0006;
-
-    // Checkerboard start line painted flat on road surface
+    // Checkerboard start line
     for (let c = 0; c < 14; c++) {
       for (let r = 0; r < 3; r++) {
         const cm = new THREE.Mesh(
@@ -382,7 +379,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       }
     }
 
-    // F1-style white starting boxes painted on asphalt (staggered 2 per row, like real F1)
+    // F1-style white starting boxes
     const whiteLineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0 });
     const boxLen = 2.8;
     const boxWid = 1.2;
@@ -518,10 +515,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       { name: 'erratic',    rbStrength: 0.060, rbCap: 0.20, topSpeedMult: 1.02, racingLineFidelity: 0.55, itemUseGap: 0.02, laneWander: 0.04 },
     ];
 
-    // F1-style staggered grid: 2 cars per row (left/right), player on pole (P1 left). Row spacing so cars don’t bump.
-    const GRID_LATERAL = 5;       // meters each side of center (P1 left = -5, P2 right = +5)
-    const gridTrackTOffset = 0.0006;
-
     for (let i = 0; i < NUM_AI; i++) {
       const car = new THREE.Group();
       scene.add(car);
@@ -559,9 +552,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     // ── PLAYER STATE (P1 on pole, left side of track) ──
     const ps = {
       trackT: 0, speed: 0, lateralOffset: -GRID_LATERAL, lap: 0,
-      heading: 0,    // yaw angle relative to track tangent
-      steerVel: 0,   // steering angular velocity (builds up, decays)
-      lateralVel: 0, // lateral velocity with momentum (sliding feel)
+      heading: 0,
+      steerVel: 0,
+      lateralVel: 0,
       lastT: 0, boost: 0, hasItem: false, position: 1,
       finished: false, finishTime: null,
       damaged: false,
@@ -601,7 +594,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         const damageMult = ps.damaged ? DAMAGED_SPEED_FACTOR : 1;
         const SPEED_MAX = physics.speedMax * boostMult * damageMult;
 
-        // ── THROTTLE / BRAKE ──
         if (keys['ArrowUp'] || keys['KeyW']) {
           const drag = physics.drag * ps.speed * ps.speed;
           const thrust = physics.thrust * boostMult;
@@ -614,12 +606,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           ps.speed = Math.max(0, ps.speed - engineBraking - drag);
         }
 
-        // ── STEERING: angular velocity model with inertia ──
-        // Pressing a key builds up steer velocity; releasing bleeds it off quickly
-        // and heading self-centers. This gives a natural build-up / unwind feel.
         const si = (keys['ArrowLeft']||keys['KeyA']) ? 1 : (keys['ArrowRight']||keys['KeyD']) ? -1 : 0;
         const speedNorm = Math.min(1, ps.speed / physics.speedMax);
-        // Torque: responsive for mobile/touch; understeer at high speed
         const steerTorque = 0.0032 * (1.0 - speedNorm * 0.45);
 
         if (si !== 0) {
@@ -635,12 +623,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         const MAX_HEADING = 0.56;
         ps.heading = Math.max(-MAX_HEADING, Math.min(MAX_HEADING, ps.heading));
 
-        // ── LATERAL MOVEMENT WITH MOMENTUM ──
-        // The car has lateral inertia — it doesn't snap direction instantly.
-        // This gives a weight-transfer / sliding feel in corners.
         const lateralScale = LATERAL_SCALE;
         const wantedLateralVel = -ps.speed * Math.sin(ps.heading) * lateralScale;
-        // grip: how fast lateral vel tracks desired (lower = more sliding)
         const grip = 0.20 + speedNorm * 0.06;
         ps.lateralVel += (wantedLateralVel - ps.lateralVel) * grip;
 
@@ -686,7 +670,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         });
       }
 
-      // Player car position and orientation
       const normT = (ps.trackT+1)%1;
       const pPos  = trackCurve.getPointAt(normT);
       const pNext = trackCurve.getPointAt((normT+0.001)%1);
@@ -699,7 +682,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       playerCar.lookAt(playerCar.position.clone().add(driveDir));
       playerCar.rotateY(Math.PI);
 
-      // Boost flame
       if (ps.boost>0&&frame%2===0) {
         const fl = new THREE.Mesh(
           new THREE.SphereGeometry(0.18+Math.random()*0.22,5,5),
@@ -711,7 +693,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         setTimeout(()=>scene.remove(fl),150);
       }
 
-      // ── AI MOVEMENT ──
       if (raceStarted) {
         const playerProgress = ps.lap + ps.trackT;
 
@@ -830,7 +811,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       all.sort((a, b) => b.progress - a.progress);
       ps.position = all.findIndex(r => r.isPlayer) + 1;
 
-      // Camera
       const camBack = pDir.clone().multiplyScalar(-10); camBack.y=5.5;
       camera.position.lerp(playerCarRef.current.position.clone().add(camBack),0.09);
       camera.lookAt(playerCarRef.current.position.clone().setY(playerCarRef.current.position.y+1.2));
