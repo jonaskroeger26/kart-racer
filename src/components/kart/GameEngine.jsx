@@ -640,10 +640,16 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
       if (raceStarted && !ps.finished) {
         const keys = keysRef.current;
-        const SPEED_MAX = physics.speedMax*(ps.boost>0?1.75:1);
-        if      (keys['ArrowUp']||keys['KeyW'])   ps.speed = Math.min(SPEED_MAX, ps.speed+physics.accel);
-        else if (keys['ArrowDown']||keys['KeyS'])  ps.speed = Math.max(-0.3, ps.speed-physics.friction*4);
-        else                                        ps.speed = Math.max(0, ps.speed-physics.friction);
+        const SPEED_MAX = physics.speedMax * (ps.boost > 0 ? 1.4 : 1);
+        if (keys['ArrowUp'] || keys['KeyW']) {
+          // Lerp toward top speed — feels like realistic acceleration curve
+          ps.speed += (SPEED_MAX - ps.speed) * physics.accel;
+        } else if (keys['ArrowDown'] || keys['KeyS']) {
+          ps.speed = Math.max(-20, ps.speed - physics.braking);
+        } else {
+          // Coast / engine braking
+          ps.speed = Math.max(0, ps.speed - physics.friction);
+        }
 
         const si = (keys['ArrowLeft']||keys['KeyA'])?-1:(keys['ArrowRight']||keys['KeyD'])?1:0;
         ps.lateralOffset += si*physics.turn*Math.max(0.3,ps.speed/physics.speedMax)*2;
