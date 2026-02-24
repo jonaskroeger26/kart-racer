@@ -757,48 +757,110 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         setTimeout(()=>scene.remove(fl),150);
       }
 
-      // AI movement — same speed scale as player, rubber-band, forward direction
+      // ── AI MOVEMENT ──
       if (raceStarted) {
         const playerProgress = ps.lap + ps.trackT;
 
         aiKarts.forEach(ai => {
-          ai.wobble += 0.01;
+          const p = ai.personality;
+          ai.wobble += 0.008;
+          ai.rbNoiseT += 0.003;
+          if (ai.itemCooldown > 0) ai.itemCooldown--;
 
           const aiProgress = ai.lap + ai.trackT;
-          const gap = playerProgress - aiProgress; // positive = player is ahead
+          const gap = playerProgress - aiProgress; // positive = player ahead
 
-          // Rubber-band: speed up when behind, slightly slow when way ahead
-          const rb = Math.max(-physics.speedMax * 0.08, Math.min(physics.speedMax * 0.18, gap * physics.speedMax * 0.04));
+          // ── RUBBER BAND ──
+          // Natural-feeling RB: slow sine drift + occasional "push" moments
+          // Each AI has its own noise phase so they don't all surge together
+          const rbNoise = Math.sin(ai.rbNoiseT + ai.rbPhase) * 0.4 + Math.sin(ai.rbNoiseT * 2.3 + ai.rbPhase) * 0.15;
+          const rawRb = gap * physics.speedMax * p.rbStrength * (1 + rbNoise * 0.3);
+          const rb = Math.max(-physics.speedMax * 0.06, Math.min(physics.speedMax * p.rbCap, rawRb));
+          // Smooth speed convergence — aggressive drivers react faster
+          const convergence = p.name === 'aggressive' ? 0.055 : p.name === 'erratic' ? 0.07 : 0.035;
           const targetSpeed = ai.topSpeed + rb;
-          ai.speed += (targetSpeed - ai.speed) * 0.04;
+          ai.speed += (targetSpeed - ai.speed) * convergence;
 
-          // Small braking-point variation
-          const variation = Math.sin(ai.wobble * 0.7) * physics.speedMax * diff.aiVar * 0.04;
+          // ── BRAKING ZONES (corner curvature detection) ──
+          // Approximate curvature by comparing tangents ahead
+          const tAhead = (ai.trackT + 0.015) % 1;
+          const tang1 = trackCurve.getTangentAt(ai.trackT);
+          const tang2 = trackCurve.getTangentAt(tAhead);
+          const curvature = 1 - tang1.dot(tang2); // 0=straight, higher=corner
+          // Slow down for corners proportional to curvature and personality
+          const cornerBrake = curvature * physics.speedMax * (p.name === 'aggressive' ? 0.6 : p.name === 'erratic' ? 0.5 : 0.8);
+          const cornerTargetSpeed = Math.max(ai.topSpeed * 0.45, ai.topSpeed - cornerBrake);
+          if (ai.speed > cornerTargetSpeed) {
+            ai.speed -= (ai.speed - cornerTargetSpeed) * 0.08;
+          }
+
+          // ── VARIATION ──
+          const variation = Math.sin(ai.wobble * 0.7) * physics.speedMax * diff.aiVar * 0.03;
 
           ai.lastT = ai.trackT;
-          // Use same step formula as player: speed * 0.000018
           const step = (ai.speed + variation) * TRACK_SCALE;
           ai.trackT = (ai.trackT + step + 1) % 1;
-
-          // Lap crossing: T goes from near 1 to near 0
           if (ai.lastT > 0.97 && ai.trackT < 0.03) ai.lap++;
 
-          // Gentle lane drift
-          ai.offset += Math.sin(ai.wobble * 0.25) * 0.05;
-          ai.offset = Math.max(-half * 0.7, Math.min(half * 0.7, ai.offset));
+          // ── RACING LINE ──
+          const racingApex = getRacingLineOffset(ai.trackT);
+          // Personality fidelity: aggressive & defensive follow line well, erratic less so
+          const wanderNoise = (Math.sin(ai.wobble * 0.18) * 2 + Math.sin(ai.wobble * 0.41) * 1) * p.laneWander * half;
+          ai.targetOffset = racingApex * p.racingLineFidelity + wanderNoise;
+          ai.targetOffset = Math.max(-half * 0.82, Math.min(half * 0.82, ai.targetOffset));
+          // Smoothly steer toward racing line target
+          ai.offset += (ai.targetOffset - ai.offset) * 0.04;
+
+          // ── ITEM PICKUP ──
+          itemBoxes.forEach(box => {
+            if (box.userData.active && ai.mesh.position.distanceTo(box.position) < 3.5 && !ai.hasItem) {
+              ai.hasItem = true;
+              box.userData.active = false;
+              box.userData.respawnTimer = 400;
+            }
+          });
+
+          // ── ITEM USAGE (strategic) ──
+          if (ai.hasItem && ai.itemCooldown <= 0) {
+            const distToPlayer = Math.abs(gap);
+            const shouldUse =
+              // Aggressive: use when close behind player
+              (p.name === 'aggressive' && gap > -0.05 && gap < p.itemUseGap) ||
+              // Defensive: use when player is right behind (gap slightly negative)
+              (p.name === 'defensive' && gap > -p.itemUseGap && gap < 0.01) ||
+              // Consistent: use when close to player either way
+              (p.name === 'consistent' && distToPlayer < p.itemUseGap) ||
+              // Erratic: random use
+              (p.name === 'erratic' && Math.random() < 0.002);
+
+            if (shouldUse) {
+              ai.hasItem = false;
+              ai.speed = Math.min(ai.speed * 1.3, ai.topSpeed * 1.3);
+              ai.itemCooldown = BOOST_DURATION * 2;
+              // Visual boost flame
+              const aPos = trackCurve.getPointAt(ai.trackT);
+              const aDir = trackCurve.getTangentAt(ai.trackT);
+              const fl = new THREE.Mesh(
+                new THREE.SphereGeometry(0.3, 5, 5),
+                new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.8 })
+              );
+              fl.position.copy(aPos).addScaledVector(aDir, -2);
+              fl.position.y += 0.3;
+              scene.add(fl);
+              setTimeout(() => scene.remove(fl), 300);
+            }
+          }
         });
       }
 
       aiKarts.forEach(ai => {
         const nt = (ai.trackT + 1) % 1;
-        // Look forward along the track (same direction the player travels)
         const aPos  = trackCurve.getPointAt(nt);
         const aNext = trackCurve.getPointAt((nt + 0.002) % 1);
         const aDir  = new THREE.Vector3().subVectors(aNext, aPos).normalize();
         const aRight = new THREE.Vector3().crossVectors(aDir, new THREE.Vector3(0, 1, 0)).normalize();
         ai.mesh.position.copy(aPos).addScaledVector(aRight, ai.offset);
         ai.mesh.position.y += 0.12;
-        // Face the forward direction — same rotation trick as player
         ai.mesh.lookAt(ai.mesh.position.clone().add(aDir));
         ai.mesh.rotateY(Math.PI);
       });
