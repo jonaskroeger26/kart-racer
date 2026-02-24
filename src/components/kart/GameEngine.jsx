@@ -629,18 +629,12 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const trackCurve = createTrackPath();
     const trackPoints = trackCurve.getPoints(1200);
 
-    // === GROUND (large realistic terrain) ===
-    const groundGeo = new THREE.PlaneGeometry(2000, 2000, 60, 60);
-    // Slightly undulate the ground
-    const posAttr = groundGeo.attributes.position;
-    for (let i = 0; i < posAttr.count; i++) {
-      const x = posAttr.getX(i), z = posAttr.getZ(i);
-      posAttr.setY(i, Math.sin(x * 0.01) * Math.cos(z * 0.012) * 3 - 2.5);
-    }
-    groundGeo.computeVertexNormals();
+    // === GROUND (flat green base beneath everything) ===
+    const groundGeo = new THREE.PlaneGeometry(2000, 2000);
     const groundMat = new THREE.MeshStandardMaterial({ color: 0x3d8c2a, roughness: 0.95, metalness: 0 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.1;
     ground.receiveShadow = true;
     scene.add(ground);
 
