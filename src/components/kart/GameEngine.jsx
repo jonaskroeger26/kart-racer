@@ -683,21 +683,47 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         setTimeout(()=>scene.remove(fl),150);
       }
 
-      // AI
+      // AI — rubber-banding + realistic racing
+      if (raceStarted) {
+        // Compute player's "total progress" for rubber-band reference
+        const playerProgress = ps.lap + ps.trackT;
+
+        aiKarts.forEach(ai => {
+          ai.wobble += 0.012;
+
+          // Rubber-band: close gap if too far behind, hold back if too far ahead
+          const aiProgress = ai.lap + ai.trackT;
+          const gap = playerProgress - aiProgress; // positive = player ahead
+          // Pull AI closer when gap is large, slow them slightly if they're way ahead
+          const rbFactor = Math.max(-0.15, Math.min(0.25, gap * 0.04));
+          const targetSpeed = ai.topSpeed + rbFactor;
+
+          // Smooth speed changes (acceleration/braking feel)
+          ai.speed += (targetSpeed - ai.speed) * 0.05;
+
+          // Small natural variation to simulate braking points
+          const variation = Math.sin(ai.wobble * 0.8) * diff.aiVar * 0.3;
+
+          ai.lastT = ai.trackT;
+          ai.trackT = (ai.trackT + (ai.speed + variation) * 0.000018 + 1) % 1;
+
+          // Lap counting: detect crossing T=0 boundary forward
+          if (ai.lastT > 0.95 && ai.trackT < 0.05) ai.lap++;
+
+          // Gradual lane drift for natural racing lines
+          ai.offset += Math.sin(ai.wobble * 0.3) * 0.06;
+          ai.offset = Math.max(-half * 0.75, Math.min(half * 0.75, ai.offset));
+        });
+      }
+
       aiKarts.forEach(ai => {
-        if (raceStarted) {
-          ai.wobble+=0.015;
-          ai.lastT=ai.trackT;
-          ai.trackT=(ai.trackT+(ai.speed+Math.sin(ai.wobble)*diff.aiVar)*0.000018+1)%1;
-          if (ai.lastT>0.97&&ai.trackT<0.03) ai.lap++;
-        }
-        const nt=(ai.trackT+1)%1;
-        const aPos =trackCurve.getPointAt(nt);
-        const aNext=trackCurve.getPointAt((nt+0.001)%1);
-        const aDir =new THREE.Vector3().subVectors(aNext,aPos).normalize();
-        const aRight=new THREE.Vector3().crossVectors(aDir,new THREE.Vector3(0,1,0)).normalize();
-        ai.mesh.position.copy(aPos).add(aRight.clone().multiplyScalar(ai.offset+Math.sin(ai.wobble*0.7)*1.8));
-        ai.mesh.position.y+=0.12;
+        const nt = (ai.trackT + 1) % 1;
+        const aPos  = trackCurve.getPointAt(nt);
+        const aNext = trackCurve.getPointAt((nt + 0.002) % 1);
+        const aDir  = new THREE.Vector3().subVectors(aNext, aPos).normalize();
+        const aRight = new THREE.Vector3().crossVectors(aDir, new THREE.Vector3(0,1,0)).normalize();
+        ai.mesh.position.copy(aPos).add(aRight.clone().multiplyScalar(ai.offset));
+        ai.mesh.position.y += 0.12;
         ai.mesh.lookAt(ai.mesh.position.clone().add(aDir));
         ai.mesh.rotateY(Math.PI);
       });
