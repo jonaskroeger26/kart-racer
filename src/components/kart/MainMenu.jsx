@@ -5,47 +5,47 @@ import * as THREE from 'three';
 const KARTS = [
   {
     id: 'speeder',
-    name: 'Porsche 911 GT3',
-    tagline: 'SPEED DEMON',
-    color: 0xf59e0b,
-    hex: '#f59e0b',
-    accent: '#fcd34d',
-    gradient: 'from-amber-500 to-yellow-300',
-    description: 'Rear-engine legend. Screaming flat-six, built for apex precision.',
-    stats: { speed: 95, accel: 70, handling: 88, weight: 40 },
+    name: 'Red Bull Racing',
+    tagline: 'PADDOCK LEADER',
+    color: 0x0600ef,
+    hex: '#0600ef',
+    accent: '#ffeb00',
+    gradient: 'from-blue-700 to-yellow-400',
+    description: 'High-rake aero, Honda power. Built for maximum downforce and speed.',
+    stats: { speed: 95, accel: 88, handling: 92, weight: 38 },
   },
   {
     id: 'balanced',
-    name: 'Ford Mustang GT500',
-    tagline: 'AMERICAN MUSCLE',
-    color: 0xef4444,
-    hex: '#ef4444',
-    accent: '#fca5a5',
-    gradient: 'from-red-600 to-rose-400',
-    description: 'Supercharged V8 fury. Raw power with iconic presence.',
-    stats: { speed: 80, accel: 85, handling: 70, weight: 72 },
+    name: 'Scuderia Ferrari',
+    tagline: 'PRANCING HORSE',
+    color: 0xdc0000,
+    hex: '#dc0000',
+    accent: '#ffd700',
+    gradient: 'from-red-600 to-yellow-500',
+    description: 'Iconic red. Pure V6 hybrid power and race-bred balance.',
+    stats: { speed: 90, accel: 85, handling: 85, weight: 42 },
   },
   {
     id: 'heavy',
-    name: 'Ford Mustang Dark Horse',
-    tagline: 'UNSTOPPABLE',
-    color: 0x8b5cf6,
-    hex: '#8b5cf6',
-    accent: '#c4b5fd',
-    gradient: 'from-violet-600 to-purple-400',
-    description: 'Track-prepped Mustang. Flat-plane crank, menacing and dominant.',
-    stats: { speed: 82, accel: 60, handling: 65, weight: 90 },
+    name: 'Mercedes-AMG',
+    tagline: 'SILVER ARROWS',
+    color: 0x00d2be,
+    hex: '#00d2be',
+    accent: '#00ffea',
+    gradient: 'from-teal-500 to-cyan-400',
+    description: 'Turbo-hybrid dominance. Engine and aero in perfect harmony.',
+    stats: { speed: 88, accel: 82, handling: 88, weight: 45 },
   },
   {
     id: 'offroad',
-    name: 'Porsche 911 Turbo S',
-    tagline: 'ALL-WEATHER BEAST',
-    color: 0x10b981,
-    hex: '#10b981',
-    accent: '#6ee7b7',
-    gradient: 'from-emerald-600 to-teal-400',
-    description: 'Twin-turbo all-wheel drive. Unstoppable in any condition.',
-    stats: { speed: 90, accel: 95, handling: 88, weight: 55 },
+    name: 'McLaren F1',
+    tagline: 'PAPAYA ORANGE',
+    color: 0xff8700,
+    hex: '#ff8700',
+    accent: '#ffb366',
+    gradient: 'from-orange-500 to-amber-400',
+    description: 'Carbon chassis, Mercedes power. Aggressive aero and traction.',
+    stats: { speed: 87, accel: 80, handling: 90, weight: 44 },
   },
 ];
 
@@ -141,100 +141,62 @@ function KartPreview3D({ kartData }) {
     floor.position.y = -0.3;
     scene.add(floor);
 
-    // Build detailed kart
+    // F1-style car preview (low nose, halo, rear wing)
     const group = new THREE.Group();
-
-    const glossy = (col) => new THREE.MeshStandardMaterial({ color: col, metalness: 0.6, roughness: 0.2 });
+    const glossy = (col) => new THREE.MeshStandardMaterial({ color: col, metalness: 0.55, roughness: 0.25 });
     const matte = (col) => new THREE.MeshStandardMaterial({ color: col, metalness: 0.1, roughness: 0.8 });
-    const chrome = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 1.0, roughness: 0.1 });
+    const carbon = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.35, roughness: 0.55 });
+    const chrome = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.95, roughness: 0.08 });
 
-    // Body
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.55, 3.1), glossy(kartData.color));
-    body.position.y = 0.5;
-    group.add(body);
+    // Nose cone
+    const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.22, 1.4, 8), glossy(kartData.color));
+    nose.rotation.z = Math.PI / 2;
+    nose.position.set(0, 0.18, -1.9);
+    group.add(nose);
 
-    // Body top shine strip
-    const shine = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 2.4), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1, roughness: 0, transparent: true, opacity: 0.3 }));
-    shine.position.set(0, 0.785, 0);
-    group.add(shine);
+    // Front wing
+    const fw = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.04, 0.35), glossy(kartData.color));
+    fw.position.set(0, 0.1, -2.15);
+    group.add(fw);
 
-    // Side skirts
-    [-1, 1].forEach(s => {
-      const sk = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 2.8), glossy(0x111111));
-      sk.position.set(s * 1.0, 0.3, 0);
-      group.add(sk);
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.08, 2.8), glossy(kartData.color));
-      stripe.position.set(s * 1.05, 0.35, 0);
-      group.add(stripe);
-    });
+    // Chassis / sidepods
+    const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.38, 2.4), glossy(kartData.color));
+    chassis.position.set(0, 0.38, 0);
+    group.add(chassis);
 
-    // Front bumper/splitter
-    const splitter = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.12, 0.5), matte(0x111111));
-    splitter.position.set(0, 0.24, -1.7);
-    group.add(splitter);
-    const frontWing = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.06, 0.3), glossy(kartData.color));
-    frontWing.position.set(0, 0.2, -1.95);
-    group.add(frontWing);
+    // Halo
+    const halo = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.9, 8), carbon);
+    halo.rotation.z = Math.PI / 2;
+    halo.position.set(0, 0.92, -0.2);
+    group.add(halo);
 
-    // Rear diffuser
-    const diff = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.2, 0.4), matte(0x111111));
-    diff.position.set(0, 0.28, 1.65);
-    group.add(diff);
+    // Livery stripe
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 2.2), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.5, roughness: 0.3 }));
+    stripe.position.set(0, 0.78, 0);
+    group.add(stripe);
 
     // Rear wing
-    const rearWing = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.07, 0.35), glossy(kartData.color));
-    rearWing.position.set(0, 1.2, 1.4);
+    const rearWing = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.05, 0.3), glossy(kartData.color));
+    rearWing.position.set(0, 0.95, 1.35);
     group.add(rearWing);
-    [-0.8, 0.8].forEach(x => {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.45, 0.07), chrome);
-      post.position.set(x, 1.0, 1.4);
+    [-0.75, 0.75].forEach(x => {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 0.05), carbon);
+      post.position.set(x, 0.78, 1.35);
       group.add(post);
     });
 
-    // Cockpit
-    const cockpit = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.4, 1.15), matte(0x0a0a1a));
-    cockpit.position.set(0, 0.88, -0.15);
-    group.add(cockpit);
-
-    // Windshield
-    const wind = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.5, 0.08), new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.35, metalness: 0.5, roughness: 0 }));
-    wind.position.set(0, 1.05, -0.7);
-    wind.rotation.x = -0.35;
-    group.add(wind);
-
-    // Driver helmet
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 12), glossy(kartData.color));
-    helmet.position.set(0, 1.42, -0.15);
-    helmet.scale.y = 0.88;
-    group.add(helmet);
-    const visor = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), new THREE.MeshStandardMaterial({ color: 0x220000, metalness: 0.8, roughness: 0.1, transparent: true, opacity: 0.8 }));
-    visor.position.set(0, 1.41, -0.35);
-    visor.scale.set(1, 0.6, 0.5);
-    group.add(visor);
-
-    // Wheels
-    const wheelPositions = [[-0.98, 0.2, -1.0], [0.98, 0.2, -1.0], [-0.98, 0.2, 1.0], [0.98, 0.2, 1.0]];
+    // Wheels (F1 style)
+    const wheelPositions = [[-1.0, 0.28, -1.35], [1.0, 0.28, -1.35], [-1.02, 0.28, 1.35], [1.02, 0.28, 1.35]];
     wheelPositions.forEach(([x, y, z]) => {
       const wg = new THREE.Group();
-      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.26, 16), matte(0x111111));
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.22, 16), matte(0x0a0a0a));
       tire.rotation.z = Math.PI / 2;
       wg.add(tire);
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.28, 10), chrome);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.24, 10), chrome);
       rim.rotation.z = Math.PI / 2;
       wg.add(rim);
-      const hubcap = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.32, 6), glossy(kartData.color));
-      hubcap.rotation.z = Math.PI / 2;
-      wg.add(hubcap);
       wg.position.set(x, y, z);
       group.add(wg);
-    });
-
-    // Exhaust pipes
-    [-0.4, 0.4].forEach(ox => {
-      const ex = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.09, 0.55, 8), chrome);
-      ex.position.set(ox, 0.45, 1.65);
-      ex.rotation.x = Math.PI / 2;
-      group.add(ex);
     });
 
     group.position.y = 0;
@@ -369,14 +331,14 @@ export default function MainMenu({ onStart }) {
               >
                 KART
               </div>
-              {/* Subtitle */}
+              {/*               Subtitle */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
                 className="mt-4 text-white/30 text-xs md:text-sm tracking-[6px] font-medium uppercase"
               >
-                ── Grand Prix Edition ──
+                ── F1 Grand Prix ──
               </motion.div>
             </motion.div>
 
@@ -407,7 +369,7 @@ export default function MainMenu({ onStart }) {
 
               <div className="grid grid-cols-2 gap-2 w-full">
                 {[
-                  { label: 'KART', sub: kart.name, icon: '🏎️', action: () => setScreen('select') },
+                  { label: 'F1 CAR', sub: kart.name, icon: '🏁', action: () => setScreen('select') },
                   { label: 'DIFFICULTY', sub: diff.label, icon: diff.icon, action: () => setScreen('difficulty') },
                 ].map((b, i) => (
                   <motion.button
@@ -458,7 +420,7 @@ export default function MainMenu({ onStart }) {
               >
                 ← BACK
               </motion.button>
-              <div className="text-white/20 text-xs tracking-[6px] font-bold">SELECT KART</div>
+              <div className="text-white/20 text-xs tracking-[6px] font-bold">SELECT F1 CAR</div>
               <div className="w-16" />
             </div>
 

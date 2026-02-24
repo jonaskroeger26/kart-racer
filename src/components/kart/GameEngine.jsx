@@ -6,68 +6,90 @@ const BOOST_DURATION = 120;
 const NUM_AI = 7;
 const LAPS_TO_WIN = 3;
 
+// F1-style circuit: main straight, heavy T1, esses, back straight, hairpin, twisty return
 function createTrackPath() {
   const pts = [
-    [0, 0, 0], [80, 0, 0], [160, 0, 0], [240, 0, -5],
-    [290, 0, -20], [310, 0, -50], [305, 0, -85], [285, 0, -110],
-    [250, 0, -130], [200, 0, -140],
-    [150, 0, -135], [100, 0, -120], [60, 0, -110], [20, 0, -115],
-    [-30, 0, -130], [-80, 0, -145], [-130, 0, -150], [-180, 0, -145],
-    [-220, 0, -130], [-250, 0, -110], [-270, 0, -80], [-275, 0, -50],
-    [-265, 0, -20], [-245, 0, 10], [-210, 0, 35], [-170, 0, 50],
-    [-130, 0, 55], [-90, 0, 50], [-60, 0, 45], [-30, 0, 40],
-    [10, 0, 38], [50, 0, 45], [80, 0, 55], [110, 0, 50], [130, 0, 40],
-    [150, 0, 30], [170, 0, 20], [200, 0, 10], [220, 0, 0],
-    [225, 0, -15], [215, 0, -30], [195, 0, -40], [170, 0, -35],
-    [140, 0, -25], [110, 0, -18], [70, 0, -8], [30, 0, -2], [0, 0, 0],
+    // Start/Finish straight (long main straight)
+    [0, 0, 0], [0, 0, -20], [0, 0, -45], [0, 0, -70], [0, 0, -95], [0, 0, -120], [0, 0, -145],
+    // Turn 1 (sharp right, heavy braking zone)
+    [25, 0, -165], [60, 0, -178], [100, 0, -182], [145, 0, -172], [185, 0, -152],
+    // Turn 2–3 (fast sweep right then left)
+    [218, 0, -120], [240, 0, -80], [248, 0, -40], [242, 0, 0],
+    // Turn 4 (left-hand sweep)
+    [222, 0, 35], [190, 0, 62], [150, 0, 80], [105, 0, 90],
+    // Back straight
+    [55, 0, 92], [0, 0, 90], [-55, 0, 92], [-105, 0, 90],
+    // Hairpin (tight left)
+    [-150, 0, 80], [-188, 0, 58], [-212, 0, 25], [-220, 0, -15], [-212, 0, -55],
+    // Turn 7–8 (right then left, twisty section)
+    [-188, 0, -88], [-152, 0, -108], [-108, 0, -118], [-60, 0, -122], [-25, 0, -120],
+    // Return to main straight
+    [0, 0, -118], [0, 0, -90], [0, 0, -55], [0, 0, -25], [0, 0, 0],
   ];
   return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.4);
 }
 
-// ── F1 Car builder ──────────────────────────────────────────────────────────
+// ── F1 Car builder (realistic proportions & details) ────────────────────────
 function createF1Car(color) {
   const g = new THREE.Group();
 
-  const paint = new THREE.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.3 });
-  const carbon = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.3, roughness: 0.6 });
-  const black = new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.9, metalness: 0 });
-  const rubber = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.95, metalness: 0 });
-  const silver = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 });
-  const darkCarbon = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.4, roughness: 0.5 });
+  const paint = new THREE.MeshStandardMaterial({ color, metalness: 0.55, roughness: 0.28 });
+  const carbon = new THREE.MeshStandardMaterial({ color: 0x0d0d0d, metalness: 0.35, roughness: 0.55 });
+  const black = new THREE.MeshStandardMaterial({ color: 0x060606, roughness: 0.92, metalness: 0 });
+  const rubber = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.96, metalness: 0 });
+  const silver = new THREE.MeshStandardMaterial({ color: 0xc8c8c8, metalness: 0.92, roughness: 0.08 });
+  const darkCarbon = new THREE.MeshStandardMaterial({ color: 0x151515, metalness: 0.45, roughness: 0.5 });
+  const accent = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.6, roughness: 0.25 });
 
   // ── NOSE / MONOCOQUE ──
-  // Long pointed nose
-  const noseGeo = new THREE.CylinderGeometry(0.08, 0.3, 1.8, 8);
+  const noseGeo = new THREE.CylinderGeometry(0.07, 0.28, 1.85, 8);
   const nose = new THREE.Mesh(noseGeo, paint);
   nose.rotation.z = Math.PI / 2;
-  nose.position.set(0, 0.22, -2.1);
+  nose.position.set(0, 0.2, -2.12);
   g.add(nose);
+  // Nose tip
+  const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), paint);
+  noseTip.position.set(0, 0.2, -2.58);
+  g.add(noseTip);
 
-  // Front wing plate
-  const fwMain = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.06, 0.55), paint);
-  fwMain.position.set(0, 0.08, -2.55);
+  // Front wing main plane
+  const fwMain = new THREE.Mesh(new THREE.BoxGeometry(2.85, 0.055, 0.5), paint);
+  fwMain.position.set(0, 0.07, -2.58);
   g.add(fwMain);
-
   // Front wing endplates
-  [-1.35, 1.35].forEach(x => {
-    const ep = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.55), paint);
-    ep.position.set(x, 0.18, -2.55);
+  [-1.38, 1.38].forEach(x => {
+    const ep = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.24, 0.5), paint);
+    ep.position.set(x, 0.19, -2.58);
     g.add(ep);
-    // flap
-    const flap = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.04, 0.22), carbon);
-    flap.position.set(0, 0.14, -2.45);
-    g.add(flap);
   });
+  // Front wing flaps (two elements)
+  const fwFlap1 = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.032, 0.2), carbon);
+  fwFlap1.position.set(0, 0.12, -2.48);
+  g.add(fwFlap1);
+  const fwFlap2 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.028, 0.16), carbon);
+  fwFlap2.position.set(0, 0.155, -2.42);
+  g.add(fwFlap2);
 
   // ── SIDEPODS ──
   [-1, 1].forEach(s => {
-    const pod = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.38, 1.6), paint);
-    pod.position.set(s * 0.72, 0.38, 0.2);
+    const pod = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.36, 1.55), paint);
+    pod.position.set(s * 0.72, 0.36, 0.2);
     g.add(pod);
-    // sidepod inlet
-    const inlet = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.28, 0.28), black);
-    inlet.position.set(s * 0.72, 0.42, -0.55);
+    const inlet = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.26, 0.26), black);
+    inlet.position.set(s * 0.72, 0.4, -0.55);
     g.add(inlet);
+  });
+
+  // ── BARGEBOARDS (between front wheel and sidepod) ──
+  [-1, 1].forEach(s => {
+    const barge = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.35, 0.7), carbon);
+    barge.position.set(s * 0.58, 0.25, -0.5);
+    barge.rotation.z = s * 0.15;
+    g.add(barge);
+    const barge2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.28, 0.5), darkCarbon);
+    barge2.position.set(s * 0.62, 0.22, -0.2);
+    barge2.rotation.z = s * 0.1;
+    g.add(barge2);
   });
 
   // ── CHASSIS / COCKPIT ──
@@ -113,9 +135,13 @@ function createF1Car(color) {
   g.add(airbox);
 
   // Engine cover (tapers to rear)
-  const engineCover = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.28, 1.2), paint);
-  engineCover.position.set(0, 0.72, 0.85);
+  const engineCover = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.26, 1.18), paint);
+  engineCover.position.set(0, 0.7, 0.85);
   g.add(engineCover);
+  // Livery stripe (center stripe along engine cover)
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 1.35), accent);
+  stripe.position.set(0, 0.82, 0.8);
+  g.add(stripe);
 
   // ── REAR WING ──
   const rwMainPlane = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.07, 0.38), paint);
@@ -472,6 +498,28 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         }
       }
     }
+
+    // ── DRS ZONE BOARD (back straight) ──
+    const drsT = 0.42;
+    const drsPos = trackCurve.getPointAt(drsT);
+    const drsTang = trackCurve.getTangentAt(drsT);
+    const drsRight = new THREE.Vector3().crossVectors(drsTang, new THREE.Vector3(0,1,0)).normalize();
+    const drsBoardGrp = new THREE.Group();
+    const drsBoard = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 2.2, 0.15),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.3, roughness: 0.6 })
+    );
+    drsBoardGrp.add(drsBoard);
+    const drsSign = new THREE.Mesh(
+      new THREE.BoxGeometry(4, 0.9, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x00cc44, emissive: 0x00aa33, emissiveIntensity: 0.4 })
+    );
+    drsSign.position.y = 0.1;
+    drsBoardGrp.add(drsSign);
+    drsBoardGrp.position.copy(drsPos).add(drsRight.clone().multiplyScalar(half + CURB + 6));
+    drsBoardGrp.position.y += 0.5;
+    drsBoardGrp.lookAt(drsPos.x + drsTang.x * 20, drsBoardGrp.position.y, drsPos.z + drsTang.z * 20);
+    scene.add(drsBoardGrp);
 
     // ── GRANDSTANDS ──
     const standMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness:0.8, metalness:0.2 });

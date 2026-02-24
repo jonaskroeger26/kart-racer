@@ -164,17 +164,52 @@ function ItemSlot({ hasItem }) {
   );
 }
 
+// F1-style circuit outline: long straight, turn 1, back straight, hairpin, return
 function Minimap({ playerT, aiPositions }) {
-  const S = 100, cx = 50, cy = 50, r = 36;
+  const cx = 50, cy = 50;
   const pt = (t) => {
-    const a = ((t + 1) % 1) * Math.PI * 2 - Math.PI / 2;
-    const wobble = Math.sin(a * 3) * 6;
-    return { x: cx + (r + wobble) * Math.cos(a), y: cy + (r + wobble * 0.5) * Math.sin(a) };
+    const T = (t + 1) % 1;
+    const straight = 0.2;
+    const r = 36;
+    let x, y;
+    if (T < straight) {
+      x = cx - r + (T / straight) * r * 2;
+      y = cy + r * 0.85;
+    } else if (T < 0.25) {
+      const u = (T - straight) / (0.25 - straight);
+      const a = -Math.PI / 2 + u * (Math.PI / 2);
+      x = cx + r + 6 * Math.cos(a);
+      y = cy + r * 0.85 + 6 * Math.sin(a);
+    } else if (T < 0.5 - straight) {
+      x = cx + r;
+      y = cy + r * 0.85 - ((T - 0.25) / (0.25 - straight)) * r * 1.7;
+    } else if (T < 0.5) {
+      const u = (T - (0.5 - straight)) / straight;
+      const a = Math.PI + u * (Math.PI / 2);
+      x = cx + r + 6 * Math.cos(a);
+      y = cy - r * 0.85 + 6 * Math.sin(a);
+    } else if (T < 0.5 + straight) {
+      x = cx + r - ((T - 0.5) / straight) * r * 2;
+      y = cy - r * 0.85;
+    } else if (T < 0.75) {
+      const u = (T - 0.5 - straight) / (0.25 - straight);
+      const a = Math.PI / 2 + u * (Math.PI / 2);
+      x = cx - r + 6 * (1 - Math.cos(a));
+      y = cy - r * 0.85 - 6 * Math.sin(a);
+    } else if (T < 1 - straight) {
+      x = cx - r;
+      y = cy - r * 0.85 + ((T - 0.75) / (0.25 - straight)) * r * 1.7;
+    } else {
+      const u = (T - (1 - straight)) / straight;
+      const a = -Math.PI / 2 - u * (Math.PI / 2);
+      x = cx - r - 6 * Math.cos(a);
+      y = cy + r * 0.85 + 6 * Math.sin(a);
+    }
+    return { x, y };
   };
   const pp = pt(playerT || 0);
 
-  // Build track path
-  const pts = [...Array(60)].map((_, i) => pt(i / 60));
+  const pts = [...Array(64)].map((_, i) => pt(i / 64));
   const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
 
   return (
