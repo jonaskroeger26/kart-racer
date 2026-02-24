@@ -8,7 +8,7 @@ const NUM_AI = 8;
 const RED_LIGHTS_DURATION = 7;
 const LAPS_TO_WIN = 3;
 const OFF_TRACK_RESPAWN_SEC = 2;
-const COLLISION_DIST = 10;
+const COLLISION_DIST = 4;
 const COLLISION_COOLDOWN_FRAMES = 120;
 const DAMAGED_SPEED_FACTOR = 0.38;
 const PIT_ZONE_T_START = 0.96;
@@ -32,6 +32,30 @@ function createTrackPath() {
     pts.push(new THREE.Vector3(x, y, z));
   }
   return new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.3);
+}
+
+// Project world position onto track; returns { normT, lateralOffset } for collision resolution
+function projectPositionOntoTrack(trackCurve, worldPos, sampleCount = 300) {
+  let bestT = 0;
+  let bestDistSq = Infinity;
+  const pos = new THREE.Vector3();
+  for (let i = 0; i <= sampleCount; i++) {
+    const t = i / sampleCount;
+    trackCurve.getPointAt(t, pos);
+    const dSq = pos.distanceToSquared(worldPos);
+    if (dSq < bestDistSq) {
+      bestDistSq = dSq;
+      bestT = t;
+    }
+  }
+  const normT = bestT;
+  trackCurve.getPointAt(normT, pos);
+  const next = new THREE.Vector3();
+  trackCurve.getPointAt((normT + 0.002) % 1, next);
+  const tangent = new THREE.Vector3().subVectors(next, pos).normalize();
+  const right = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+  const lateralOffset = new THREE.Vector3().subVectors(worldPos, pos).dot(right);
+  return { normT, lateralOffset };
 }
 
 function createItemBox(position) {
@@ -798,13 +822,45 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         updateWheelRotation(ai.mesh, ai.speed);
       });
 
-      if (raceStarted && !ps.finished && ps.collisionCooldown <= 0) {
-        const pPos = playerCarRef.current.position;
-        for (const ai of aiKarts) {
-          if (pPos.distanceTo(ai.mesh.position) < COLLISION_DIST) {
+      if (raceStarted && !ps.finished) {
+        const playerCar = playerCarRef.current;
+        const pPos = playerCar.position.clone();
+        const pushDir = new THREE.Vector3();
+        const half = TRACK_WIDTH / 2;
+        let resolved = false;
+        for (let iter = 0; iter < 5; iter++) {
+          let anyOverlap = false;
+          for (const ai of aiKarts) {
+            const dist = pPos.distanceTo(ai.mesh.position);
+            if (dist < COLLISION_DIST && dist > 0.001) {
+              pushDir.subVectors(pPos, ai.mesh.position).normalize();
+              const overlap = COLLISION_DIST - dist;
+              pPos.addScaledVector(pushDir, overlap);
+              anyOverlap = true;
+              resolved = true;
+            }
+          }
+          if (!anyOverlap) break;
+        }
+        if (resolved) {
+          const { normT: newT, lateralOffset: newOffset } = projectPositionOntoTrack(trackCurve, pPos);
+          ps.trackT = newT;
+          ps.lateralOffset = Math.max(-half - 22, Math.min(half + 22, newOffset));
+          ps.lateralVel *= 0.3;
+          playerCar.position.copy(pPos);
+          playerCar.position.y = 0.12;
+          const newNext = new THREE.Vector3();
+          trackCurve.getPointAt((newT + 0.001) % 1, newNext);
+          const newP = new THREE.Vector3();
+          trackCurve.getPointAt(newT, newP);
+          const newDir = new THREE.Vector3().subVectors(newNext, newP).normalize();
+          const newDriveDir = newDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), ps.heading);
+          playerCar.lookAt(playerCar.position.clone().add(newDriveDir));
+          playerCar.rotateY(Math.PI);
+          if (ps.collisionCooldown <= 0) {
             ps.damaged = true;
             ps.collisionCooldown = COLLISION_COOLDOWN_FRAMES;
-            break;
+            ps.speed = Math.max(0, ps.speed * 0.55);
           }
         }
       }
