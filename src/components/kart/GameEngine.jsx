@@ -874,7 +874,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x444466, metalness: 0.9, roughness: 0.1 });
     [-1, 1].forEach(side => {
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, poleH, 10), poleMat);
-      const pPos = startPos.clone().add(gateRight.clone().multiplyScalar(side * (TRACK_WIDTH / 2 + 1.5)));
+      const pPos = startPos.clone().addScaledVector(gateRight, side * (TRACK_WIDTH / 2 + 1.5));
       pPos.y += poleH / 2;
       pole.position.copy(pPos);
       pole.castShadow = true;
