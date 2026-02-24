@@ -493,26 +493,32 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     scene.add(buildMesh(gV,  gI,  grassMat, 0));
     scene.add(buildMesh(wV,  wI,  whiteMat, 2));
 
-    const armcoMat  = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.8, roughness: 0.3 });
-    const postMat   = new THREE.MeshStandardMaterial({ color: 0x666666, metalness: 0.5, roughness: 0.5 });
-    const step = 5;
-    for (let i = 0; i < trackPoints.length; i += step) {
-      const curr = trackPoints[i];
-      const next = trackPoints[(i + step) % trackPoints.length];
-      const dir  = new THREE.Vector3().subVectors(next, curr).normalize();
+    // Armco barriers — placed correctly along track tangent
+    const armcoMat = new THREE.MeshStandardMaterial({ color: 0xbbbbbb, metalness: 0.8, roughness: 0.3 });
+    const postMat  = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.5, roughness: 0.5 });
+    const barrierStep = 8;
+    for (let i = 0; i < trackPoints.length - 1; i += barrierStep) {
+      const curr  = trackPoints[i];
+      const next  = trackPoints[Math.min(i + barrierStep, trackPoints.length - 1)];
+      const dir   = new THREE.Vector3().subVectors(next, curr).normalize();
       const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0,1,0)).normalize();
-      const off = half + CURB + 0.8;
       const segLen = curr.distanceTo(next);
-      [-1,1].forEach(s => {
-        const pos = curr.clone().addScaledVector(right, s * off);
-        const bm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.32, segLen+0.4), armcoMat);
-        bm.position.set(pos.x, pos.y+0.42, pos.z);
-        bm.lookAt(next.x, pos.y+0.42, next.z);
-        scene.add(bm);
-        const bm2 = bm.clone(); bm2.position.y += 0.36; scene.add(bm2);
-        if (i % 15 === 0) {
-          const post = new THREE.Mesh(new THREE.BoxGeometry(0.09,0.85,0.09), postMat);
-          post.position.set(pos.x, pos.y+0.42, pos.z);
+      const off = half + CURB + 0.6;
+      [-1, 1].forEach(s => {
+        const center = curr.clone()
+          .addScaledVector(right, s * off)
+          .addScaledVector(dir, segLen * 0.5);
+        center.y += 0.22;
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(segLen + 0.2, 0.28, 0.12), armcoMat);
+        rail.position.copy(center);
+        rail.rotation.y = Math.atan2(dir.x, dir.z);
+        scene.add(rail);
+        // Post every other segment
+        if (i % (barrierStep * 2) === 0) {
+          const postPos = curr.clone().addScaledVector(right, s * off);
+          postPos.y += 0.42;
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.85, 0.1), postMat);
+          post.position.copy(postPos);
           scene.add(post);
         }
       });
