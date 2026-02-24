@@ -586,10 +586,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     const physics = kartPhysics[kartType] || kartPhysics.balanced;
 
-    // Scene
+    // Scene — bright daytime F1
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a1628);
-    scene.fog = new THREE.FogExp2(0x0a1628, 0.002);
+    scene.background = new THREE.Color(0x87ceeb);
+    scene.fog = new THREE.Fog(0x87ceeb, 300, 700);
 
     const camera = new THREE.PerspectiveCamera(65, width / height, 0.1, 1000);
 
@@ -599,50 +599,31 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.5;
+    renderer.toneMappingExposure = 1.2;
     container.appendChild(renderer.domElement);
 
-    // === LIGHTING ===
-    const ambient = new THREE.AmbientLight(0x223355, 1.0);
+    // === LIGHTING — bright daylight ===
+    const ambient = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambient);
 
-    // Main moon light
-    const moon = new THREE.DirectionalLight(0x9ab8ff, 1.8);
-    moon.position.set(-80, 150, 60);
-    moon.castShadow = true;
-    moon.shadow.mapSize.set(4096, 4096);
-    moon.shadow.camera.left = -400;
-    moon.shadow.camera.right = 400;
-    moon.shadow.camera.top = 400;
-    moon.shadow.camera.bottom = -400;
-    moon.shadow.camera.far = 600;
-    moon.shadow.bias = -0.0003;
-    scene.add(moon);
+    const sun = new THREE.DirectionalLight(0xfff5e0, 2.5);
+    sun.position.set(100, 200, 80);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -400;
+    sun.shadow.camera.right = 400;
+    sun.shadow.camera.top = 400;
+    sun.shadow.camera.bottom = -400;
+    sun.shadow.camera.far = 600;
+    sun.shadow.bias = -0.0003;
+    scene.add(sun);
 
-    // Warm fill
-    const fill = new THREE.DirectionalLight(0xff7040, 0.4);
-    fill.position.set(120, 30, -80);
+    const fill = new THREE.DirectionalLight(0xc8e0ff, 0.8);
+    fill.position.set(-80, 60, -60);
     scene.add(fill);
 
-    const hemi = new THREE.HemisphereLight(0x223366, 0x111122, 0.7);
+    const hemi = new THREE.HemisphereLight(0x87ceeb, 0x4a7c2f, 0.6);
     scene.add(hemi);
-
-    // === SKY ===
-    const skyGeo = new THREE.SphereGeometry(600, 16, 8);
-    const skyMat = new THREE.MeshBasicMaterial({ color: 0x0a1628, side: THREE.BackSide });
-    scene.add(new THREE.Mesh(skyGeo, skyMat));
-
-    // Stars
-    const starGeo = new THREE.BufferGeometry();
-    const starVerts = [];
-    for (let i = 0; i < 3000; i++) {
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      const r = 500 + Math.random() * 60;
-      starVerts.push(r * Math.sin(phi) * Math.cos(theta), Math.abs(r * Math.cos(phi)), r * Math.sin(phi) * Math.sin(theta));
-    }
-    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
-    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.8 })));
 
     // === TRACK ===
     const trackCurve = createTrackPath();
