@@ -297,19 +297,11 @@ export default function MainMenu({ onStart }) {
 
         {/* ═══════════════ MAIN SCREEN ═══════════════ */}
         {screen === 'main' && (
-          <motion.div
-            key="main"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
+          <div
             className="relative h-full flex flex-col items-center justify-center"
           >
             {/* Hero title */}
-            <motion.div
-              initial={{ y: -80, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ type: 'spring', damping: 16, delay: 0.05 }}
+            <div
               style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
               className="text-center mb-12 select-none"
             >
