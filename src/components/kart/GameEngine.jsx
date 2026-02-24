@@ -645,7 +645,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     scene.add(ground);
 
     // === TRACK SURFACE ===
-    const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.92, metalness: 0.02 });
+    const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x303030, roughness: 0.85, metalness: 0.05 });
     const curbRedMat = new THREE.MeshStandardMaterial({ color: 0xee1111, roughness: 0.5, metalness: 0, emissive: 0x440000, emissiveIntensity: 0.2 });
     const curbWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0, emissive: 0xffffff, emissiveIntensity: 0.1 });
     const centerLineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0, emissive: 0xffffff, emissiveIntensity: 0.15 });
