@@ -273,7 +273,7 @@ function createItemBox(position) {
   return group;
 }
 
-// Load Red Bull RB21 GLB and scale/orient to match game (drivable player car)
+// Load Red Bull RB21 GLB and scale/orient to match game
 const RB21_MODEL_URL = '/models/rb21.glb';
 function loadRB21Car() {
   return new Promise((resolve, reject) => {
@@ -299,12 +299,36 @@ function loadRB21Car() {
         model.position.set(0, 0, 0);
         const group = new THREE.Group();
         group.add(model);
-        resolve(group);
+        resolve({ group, model, scale });
       },
       undefined,
       () => reject(new Error('RB21 model failed to load'))
     );
   });
+}
+
+// Clone RB21 model and tint all materials to a team color (for AI cars)
+function cloneRB21WithColor({ model, scale }, colorHex) {
+  const clone = model.clone(true);
+  clone.traverse((child) => {
+    if (child.isMesh && child.material) {
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach((mat) => {
+        const m = mat.clone();
+        m.color.setHex(colorHex);
+        if (m.emissive) m.emissive.setHex(colorHex).multiplyScalar(0.15);
+        if (Array.isArray(child.material)) {
+          const i = child.material.indexOf(mat);
+          child.material[i] = m;
+        } else {
+          child.material = m;
+        }
+      });
+    }
+  });
+  const group = new THREE.Group();
+  group.add(clone);
+  return group;
 }
 
 export default function GameEngine({ onGameState, kartColor, kartType, difficulty }) {
@@ -620,18 +644,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       itemBoxes.push(box);
     }
 
-    // ── CARS (player: RB21 GLB if available, else procedural; use ref so we can swap) ──
+    // ── CARS (player + AI: RB21 GLB if available, else procedural; AI get different colors) ──
+    const aiColors = [0xff6600, 0x1155ff, 0x22cc55, 0xffcc00, 0xcc44ff, 0xff2222, 0x00ccff];
     const playerCarRef = { current: createF1Car(kartColor) };
     scene.add(playerCarRef.current);
-    loadRB21Car()
-      .then((rb21) => {
-        scene.remove(playerCarRef.current);
-        playerCarRef.current = rb21;
-        scene.add(rb21);
-      })
-      .catch(() => {});
-
-    const aiColors = [0xff6600, 0x1155ff, 0x22cc55, 0xffcc00, 0xcc44ff, 0xff2222, 0x00ccff];
     const aiKarts = [];
 
     // AI top speed in same units as player (physics.speedMax scale)
@@ -708,6 +724,21 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         rbNoiseT: 0,
       });
     }
+
+    // When RB21 loads, replace player and all AI with same car model (AI in their team colors)
+    loadRB21Car()
+      .then((rb21) => {
+        scene.remove(playerCarRef.current);
+        playerCarRef.current = rb21.group;
+        scene.add(rb21.group);
+        aiKarts.forEach((ai, i) => {
+          scene.remove(ai.mesh);
+          const clone = cloneRB21WithColor(rb21, aiColors[i]);
+          scene.add(clone);
+          ai.mesh = clone;
+        });
+      })
+      .catch(() => {});
 
     // ── PLAYER STATE ──
     const ps = {
