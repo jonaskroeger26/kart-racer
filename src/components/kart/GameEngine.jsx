@@ -686,47 +686,48 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         setTimeout(()=>scene.remove(fl),150);
       }
 
-      // AI — rubber-banding + realistic racing
+      // AI movement — same speed scale as player, rubber-band, forward direction
       if (raceStarted) {
-        // Compute player's "total progress" for rubber-band reference
         const playerProgress = ps.lap + ps.trackT;
 
         aiKarts.forEach(ai => {
-          ai.wobble += 0.012;
+          ai.wobble += 0.01;
 
-          // Rubber-band: close gap if too far behind, hold back if too far ahead
           const aiProgress = ai.lap + ai.trackT;
-          const gap = playerProgress - aiProgress; // positive = player ahead
-          // Pull AI closer when gap is large, slow them slightly if they're way ahead
-          const rbFactor = Math.max(-0.15, Math.min(0.25, gap * 0.04));
-          const targetSpeed = ai.topSpeed + rbFactor;
+          const gap = playerProgress - aiProgress; // positive = player is ahead
 
-          // Smooth speed changes (acceleration/braking feel)
-          ai.speed += (targetSpeed - ai.speed) * 0.05;
+          // Rubber-band: speed up when behind, slightly slow when way ahead
+          const rb = Math.max(-physics.speedMax * 0.08, Math.min(physics.speedMax * 0.18, gap * physics.speedMax * 0.04));
+          const targetSpeed = ai.topSpeed + rb;
+          ai.speed += (targetSpeed - ai.speed) * 0.04;
 
-          // Small natural variation to simulate braking points
-          const variation = Math.sin(ai.wobble * 0.8) * diff.aiVar * 0.3;
+          // Small braking-point variation
+          const variation = Math.sin(ai.wobble * 0.7) * physics.speedMax * diff.aiVar * 0.04;
 
           ai.lastT = ai.trackT;
-          ai.trackT = (ai.trackT + (ai.speed + variation) * 0.000018 + 1) % 1;
+          // Use same step formula as player: speed * 0.000018
+          const step = (ai.speed + variation) * 0.000018;
+          ai.trackT = (ai.trackT + step + 1) % 1;
 
-          // Lap counting: detect crossing T=0 boundary forward
-          if (ai.lastT > 0.95 && ai.trackT < 0.05) ai.lap++;
+          // Lap crossing: T goes from near 1 to near 0
+          if (ai.lastT > 0.97 && ai.trackT < 0.03) ai.lap++;
 
-          // Gradual lane drift for natural racing lines
-          ai.offset += Math.sin(ai.wobble * 0.3) * 0.06;
-          ai.offset = Math.max(-half * 0.75, Math.min(half * 0.75, ai.offset));
+          // Gentle lane drift
+          ai.offset += Math.sin(ai.wobble * 0.25) * 0.05;
+          ai.offset = Math.max(-half * 0.7, Math.min(half * 0.7, ai.offset));
         });
       }
 
       aiKarts.forEach(ai => {
         const nt = (ai.trackT + 1) % 1;
+        // Look forward along the track (same direction the player travels)
         const aPos  = trackCurve.getPointAt(nt);
         const aNext = trackCurve.getPointAt((nt + 0.002) % 1);
         const aDir  = new THREE.Vector3().subVectors(aNext, aPos).normalize();
-        const aRight = new THREE.Vector3().crossVectors(aDir, new THREE.Vector3(0,1,0)).normalize();
-        ai.mesh.position.copy(aPos).add(aRight.clone().multiplyScalar(ai.offset));
+        const aRight = new THREE.Vector3().crossVectors(aDir, new THREE.Vector3(0, 1, 0)).normalize();
+        ai.mesh.position.copy(aPos).addScaledVector(aRight, ai.offset);
         ai.mesh.position.y += 0.12;
+        // Face the forward direction — same rotation trick as player
         ai.mesh.lookAt(ai.mesh.position.clone().add(aDir));
         ai.mesh.rotateY(Math.PI);
       });
