@@ -571,9 +571,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const height = container.clientHeight;
 
     const diffSettings = {
-      easy:   { aiSpeed: 0.55, aiVar: 0.08, speedMax: 1.8,  accel: 0.032 },
-      medium: { aiSpeed: 0.72, aiVar: 0.12, speedMax: 1.7,  accel: 0.028 },
-      hard:   { aiSpeed: 0.95, aiVar: 0.06, speedMax: 1.6,  accel: 0.025 },
+      easy:   { aiSpeed: 0.55, aiVar: 0.08, speedMax: 120, accel: 2.2 },
+      medium: { aiSpeed: 0.72, aiVar: 0.12, speedMax: 110, accel: 1.8 },
+      hard:   { aiSpeed: 0.95, aiVar: 0.06, speedMax: 100, accel: 1.5 },
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
