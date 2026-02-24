@@ -17,4 +17,9 @@ This is a **Turbo Kart** — a browser-based 3D kart/F1 racing game built as a s
 
 ### Known cloud environment caveats
 
-- **WebGL is unavailable** in the cloud VM (no GPU). The 3D racing scene (Three.js WebGLRenderer) will fail to render. The main menu and React UI layer load correctly. To test the actual 3D gameplay, a local machine with WebGL support is required.
+- **WebGL requires software rendering** in the cloud VM (no GPU). To enable WebGL for the Three.js game engine, install Mesa EGL libraries and launch Chrome with SwiftShader:
+  ```
+  sudo apt-get install -y libegl1 libegl-mesa0 libgbm1
+  google-chrome --enable-unsafe-swiftshader --use-gl=angle --use-angle=swiftshader --enable-webgl --ignore-gpu-blocklist <url>
+  ```
+  This enables full 3D rendering (car selection, race scene, HUD) via software WebGL. Performance is adequate for testing but slower than GPU-accelerated rendering.
