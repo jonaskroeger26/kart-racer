@@ -285,17 +285,20 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const height = container.clientHeight || window.innerHeight;
 
     const diffSettings = {
-      easy:   { aiSpeed: 0.55, aiVar: 0.08, speedMax: 120, accel: 2.2 },
-      medium: { aiSpeed: 0.72, aiVar: 0.12, speedMax: 110, accel: 1.8 },
-      hard:   { aiSpeed: 0.95, aiVar: 0.06, speedMax: 100, accel: 1.5 },
+      easy:   { aiSpeed: 0.55, aiVar: 0.08, speedMax: 120 },
+      medium: { aiSpeed: 0.72, aiVar: 0.12, speedMax: 110 },
+      hard:   { aiSpeed: 0.95, aiVar: 0.06, speedMax: 100 },
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
+    // accel = how quickly speed lerps toward speedMax per frame (0-1 factor)
+    // friction = speed decay per frame when not pressing gas
+    // braking = speed decay per frame when pressing brake
     const kartPhysics = {
-      speeder:  { speedMax: diff.speedMax * 1.15, accel: diff.accel * 1.1, turn: 0.055, friction: 0.8 },
-      balanced: { speedMax: diff.speedMax,        accel: diff.accel,       turn: 0.060, friction: 0.65 },
-      heavy:    { speedMax: diff.speedMax * 0.88, accel: diff.accel * 0.9, turn: 0.045, friction: 0.5 },
-      offroad:  { speedMax: diff.speedMax * 0.95, accel: diff.accel * 1.05,turn: 0.065, friction: 0.65 },
+      speeder:  { speedMax: diff.speedMax * 1.15, accel: 0.018, turn: 0.055, friction: 0.4, braking: 1.8 },
+      balanced: { speedMax: diff.speedMax,        accel: 0.015, turn: 0.060, friction: 0.35, braking: 1.5 },
+      heavy:    { speedMax: diff.speedMax * 0.88, accel: 0.012, turn: 0.045, friction: 0.25, braking: 1.2 },
+      offroad:  { speedMax: diff.speedMax * 0.95, accel: 0.016, turn: 0.065, friction: 0.30, braking: 1.4 },
     };
     const physics = kartPhysics[kartType] || kartPhysics.balanced;
 
