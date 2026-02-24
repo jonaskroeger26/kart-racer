@@ -38,8 +38,17 @@ export default function KartRacer() {
             kartType={config.kartType}
             difficulty={config.difficulty}
           />
+          {gameState?.loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
+              <div className="text-white text-center">
+                <div className="inline-block w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin mb-4" />
+                <p className="text-lg font-medium">Loading...</p>
+                <p className="text-sm text-white/70 mt-1">Preparing cars and track</p>
+              </div>
+            </div>
+          )}
           </div>
-          <RaceHUD gameState={gameState} kartHex={config.kartHex} onBackToMenu={handleBackToMenu} />
+          <RaceHUD gameState={gameState?.loading ? null : gameState} kartHex={config.kartHex} onBackToMenu={handleBackToMenu} />
           <MobileControls />
         </>
       )}

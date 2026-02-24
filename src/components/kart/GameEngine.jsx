@@ -547,10 +547,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     }
 
     const personalities = [
-      { name: 'aggressive', rbStrength: 0.055, rbCap: 0.22, topSpeedMult: 1.06, racingLineFidelity: 0.7, itemUseGap: 0.04, laneWander: 0.02 },
-      { name: 'defensive',  rbStrength: 0.030, rbCap: 0.12, topSpeedMult: 0.96, racingLineFidelity: 0.95, itemUseGap: 0.08, laneWander: 0.01 },
-      { name: 'consistent', rbStrength: 0.040, rbCap: 0.16, topSpeedMult: 1.00, racingLineFidelity: 0.88, itemUseGap: 0.06, laneWander: 0.015 },
-      { name: 'erratic',    rbStrength: 0.060, rbCap: 0.20, topSpeedMult: 1.02, racingLineFidelity: 0.55, itemUseGap: 0.02, laneWander: 0.04 },
+      { name: 'aggressive', rbStrength: 0.022, rbCap: 0.10, topSpeedMult: 1.06, racingLineFidelity: 0.7, itemUseGap: 0.04, laneWander: 0.02 },
+      { name: 'defensive',  rbStrength: 0.012, rbCap: 0.06, topSpeedMult: 0.96, racingLineFidelity: 0.95, itemUseGap: 0.08, laneWander: 0.01 },
+      { name: 'consistent', rbStrength: 0.018, rbCap: 0.08, topSpeedMult: 1.00, racingLineFidelity: 0.88, itemUseGap: 0.06, laneWander: 0.015 },
+      { name: 'erratic',    rbStrength: 0.025, rbCap: 0.09, topSpeedMult: 1.02, racingLineFidelity: 0.55, itemUseGap: 0.02, laneWander: 0.04 },
     ];
 
     for (let i = 0; i < NUM_AI; i++) {
@@ -567,6 +567,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         speed: 0, topSpeed,
         offset: startOffset,
         targetOffset: startOffset, lap: 0,
+        lapCountCooldown: 0,
         wobble: Math.random() * Math.PI * 2,
         personality, hasItem: false, itemCooldown: 0,
         rbPhase: Math.random() * Math.PI * 2, rbNoiseT: 0,
@@ -584,8 +585,13 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           scene.add(clone);
           ai.mesh = clone;
         });
+        assetsReady = true;
+        startTime = Date.now();
       })
-      .catch(() => {});
+      .catch(() => {
+        assetsReady = true;
+        startTime = Date.now();
+      });
 
     // ── PLAYER STATE (P1 on pole, left side of track) ──
     const ps = {
@@ -600,13 +606,23 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       collisionCooldown: 0,
       inPitSince: null,
       lastOnTrackT: 0,
+      lapCountCooldown: 0,
     };
 
-    let startTime = Date.now(), greenTime = null, raceStarted = false, frame = 0;
+    let assetsReady = false;
+    let startTime = null;
+    let greenTime = null;
+    let raceStarted = false;
+    let frame = 0;
 
     function animate() {
       animFrameRef.current = requestAnimationFrame(animate);
       frame++;
+      if (!assetsReady || startTime == null) {
+        if (onGameState) onGameState({ loading: true });
+        renderer.render(scene, camera);
+        return;
+      }
       const elapsed = (Date.now() - startTime) / 1000;
       if (!raceStarted) {
         if (elapsed >= RED_LIGHTS_DURATION) {
@@ -695,9 +711,11 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         if (ps.boost>0) ps.boost--;
 
         if (ps.collisionCooldown > 0) ps.collisionCooldown--;
+        if (ps.lapCountCooldown > 0) ps.lapCountCooldown--;
 
-        if (ps.lastT>0.97&&ps.trackT<0.03) {
+        if (ps.lastT>0.97&&ps.trackT<0.03&&ps.lapCountCooldown<=0) {
           ps.lap++;
+          ps.lapCountCooldown = 120;
           if (ps.lap>=LAPS_TO_WIN) { ps.finished=true; ps.finishTime=greenTime?(Date.now()-greenTime)/1000:0; }
         }
 
@@ -744,10 +762,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           const aiProgress = ai.lap + ai.trackT;
           const gap = playerProgress - aiProgress;
 
-          const rbNoise = Math.sin(ai.rbNoiseT + ai.rbPhase) * 0.4 + Math.sin(ai.rbNoiseT * 2.3 + ai.rbPhase) * 0.15;
+          const rbNoise = Math.sin(ai.rbNoiseT + ai.rbPhase) * 0.2 + Math.sin(ai.rbNoiseT * 2.3 + ai.rbPhase) * 0.08;
           const rawRb = gap * physics.speedMax * p.rbStrength * (1 + rbNoise * 0.3);
-          const rb = Math.max(-physics.speedMax * 0.06, Math.min(physics.speedMax * p.rbCap, rawRb));
-          const convergence = p.name === 'aggressive' ? 0.055 : p.name === 'erratic' ? 0.07 : 0.035;
+          const rb = Math.max(-physics.speedMax * 0.04, Math.min(physics.speedMax * p.rbCap, rawRb));
+          const convergence = p.name === 'aggressive' ? 0.022 : p.name === 'erratic' ? 0.028 : 0.016;
           const targetSpeed = ai.topSpeed + rb;
           ai.speed += (targetSpeed - ai.speed) * convergence;
 
@@ -759,14 +777,18 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           const cornerBrake = curvature * physics.speedMax * (p.name === 'aggressive' ? 0.6 : p.name === 'erratic' ? 0.5 : 0.8);
           const cornerTargetSpeed = Math.max(ai.topSpeed * 0.45, ai.topSpeed - cornerBrake);
           if (ai.speed > cornerTargetSpeed) {
-            ai.speed -= (ai.speed - cornerTargetSpeed) * 0.08;
+            ai.speed -= (ai.speed - cornerTargetSpeed) * 0.04;
           }
 
           const variation = Math.sin(ai.wobble * 0.7) * physics.speedMax * diff.aiVar * 0.03;
           ai.lastT = ai.trackT;
           const aiStep = (ai.speed + variation) * TRACK_SCALE;
           ai.trackT = (ai.trackT + aiStep + 1) % 1;
-          if (ai.lastT > 0.97 && ai.trackT < 0.03) ai.lap++;
+          if (ai.lastT > 0.97 && ai.trackT < 0.03 && ai.lapCountCooldown <= 0) {
+            ai.lap++;
+            ai.lapCountCooldown = 120;
+          }
+          if (ai.lapCountCooldown > 0) ai.lapCountCooldown--;
 
           const racingApex = getRacingLineOffset(ai.trackT);
           const wanderNoise = (Math.sin(ai.wobble * 0.18) * 2 + Math.sin(ai.wobble * 0.41) * 1) * p.laneWander * half;
@@ -893,6 +915,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
       if (onGameState) {
         onGameState({
+          loading: false,
           speed: Math.abs(ps.speed / physics.speedMax * 300).toFixed(0),
           speedMaxKmh: 300,
           lap: Math.min(ps.lap+1,LAPS_TO_WIN),
