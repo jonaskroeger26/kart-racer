@@ -280,12 +280,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
   const initGame = useCallback(() => {
     if (!mountRef.current) return;
     const container = mountRef.current;
-    let width = container.clientWidth;
-    let height = container.clientHeight;
-    if (!width || !height) {
-      width = window.innerWidth;
-      height = window.innerHeight;
-    }
+    // Wait a frame to ensure the container is in the DOM and has dimensions
+    const width = container.clientWidth || window.innerWidth;
+    const height = container.clientHeight || window.innerHeight;
 
     const diffSettings = {
       easy:   { aiSpeed: 0.55, aiVar: 0.08, speedMax: 120, accel: 2.2 },
