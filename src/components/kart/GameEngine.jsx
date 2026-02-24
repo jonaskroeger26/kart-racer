@@ -763,6 +763,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     // ── PLAYER STATE ──
     const ps = {
       trackT: 0, speed: 0, lateralOffset: 0, lap: 0,
+      heading: 0, // rad, yaw relative to track tangent; steering rotates car, movement follows heading
       lastT: 0, boost: 0, hasItem: false, position: 1,
       finished: false, finishTime: null,
       damaged: false,
@@ -815,9 +816,23 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           ps.speed = Math.max(0, ps.speed - engineBraking - drag);
         }
 
-        // Steering: allow going off track (up to grass), then respawn after OFF_TRACK_RESPAWN_SEC
-        const si = (keys['ArrowLeft']||keys['KeyA'])?-1:(keys['ArrowRight']||keys['KeyD'])?1:0;
-        ps.lateralOffset += si*physics.turn*Math.max(0.3,ps.speed/physics.speedMax)*2;
+        // Car physics: steering changes heading (turn wheel), movement follows heading
+        const si = (keys['ArrowLeft']||keys['KeyA'])?1:(keys['ArrowRight']||keys['KeyD'])?-1:0;
+        const steerRate = 0.0018 * Math.max(0.4, ps.speed / physics.speedMax);
+        if (si !== 0) {
+          ps.heading += si * steerRate;
+        } else {
+          ps.heading *= 0.96; // recenter steering when not turning
+        }
+        const MAX_HEADING = 0.52;
+        ps.heading = Math.max(-MAX_HEADING, Math.min(MAX_HEADING, ps.heading));
+
+        // Move along track by cos(heading), lateral by sin(heading) (car drives where it points)
+        const trackLenWorld = 550;
+        const lateralScale = trackLenWorld * TRACK_SCALE;
+        ps.trackT = (ps.trackT + ps.speed * Math.cos(ps.heading) * TRACK_SCALE + 1) % 1;
+        ps.lateralOffset -= ps.speed * Math.sin(ps.heading) * lateralScale;
+
         const offTrackLimit = half + 22;
         ps.lateralOffset = Math.max(-offTrackLimit, Math.min(offTrackLimit, ps.lateralOffset));
 
@@ -828,6 +843,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           if (offSec >= OFF_TRACK_RESPAWN_SEC) {
             ps.trackT = (ps.lastOnTrackT - 0.025 + 1) % 1;
             ps.lateralOffset = 0;
+            ps.heading = 0;
             ps.speed = Math.max(0, ps.speed * 0.4);
             ps.offTrackSince = null;
           }
@@ -855,7 +871,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         });
       }
 
-      // Player car position
+      // Player car position and orientation (car points in driving direction = track tangent + heading)
       const normT = (ps.trackT+1)%1;
       const pPos  = trackCurve.getPointAt(normT);
       const pNext = trackCurve.getPointAt((normT+0.001)%1);
@@ -864,7 +880,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const playerCar = playerCarRef.current;
       playerCar.position.copy(pPos).add(pRight.clone().multiplyScalar(ps.lateralOffset));
       playerCar.position.y += 0.12;
-      playerCar.lookAt(playerCar.position.clone().add(pDir));
+      const driveDir = pDir.clone().applyAxisAngle(new THREE.Vector3(0,1,0), ps.heading);
+      playerCar.lookAt(playerCar.position.clone().add(driveDir));
       playerCar.rotateY(Math.PI);
 
       // Boost flame
