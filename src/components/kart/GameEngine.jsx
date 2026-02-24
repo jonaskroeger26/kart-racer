@@ -638,7 +638,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       posAttr.setY(i, Math.sin(x * 0.01) * Math.cos(z * 0.012) * 3 - 2.5);
     }
     groundGeo.computeVertexNormals();
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a2e0a, roughness: 0.95, metalness: 0 });
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x3d8c2a, roughness: 0.95, metalness: 0 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
