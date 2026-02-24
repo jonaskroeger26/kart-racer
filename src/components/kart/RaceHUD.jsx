@@ -233,7 +233,7 @@ function Minimap({ playerT, aiPositions }) {
 
 export default function RaceHUD({ gameState, onBackToMenu }) {
   if (!gameState) return null;
-  const { speed, lap, totalLaps, position, totalRacers, hasItem, boost, countdown, raceTime, finished, finishTime, playerTrackT, aiPositions, damaged, inPit } = gameState;
+  const { speed, lap, totalLaps, position, totalRacers, hasItem, boost, countdown, redLightsOn, lightsOut, goVisible, raceTime, finished, finishTime, playerTrackT, aiPositions, damaged, inPit } = gameState;
 
   return (
     <div className="absolute inset-0 pointer-events-none select-none" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -253,37 +253,38 @@ export default function RaceHUD({ gameState, onBackToMenu }) {
         </motion.div>
       </div>
 
-      {/* ── COUNTDOWN ── */}
+      {/* ── F1 RED LIGHTS + GO ── */}
       <AnimatePresence>
-        {countdown !== null && countdown > 0 && (
+        {redLightsOn != null && redLightsOn > 0 && !lightsOut && (
           <motion.div
-            key={`cd-${countdown}`}
-            initial={{ scale: 3, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.4, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="absolute inset-0 flex items-center justify-center"
+            key="red-lights"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex items-center justify-center gap-3 sm:gap-4"
           >
-            <div
-              className="font-black leading-none tabular-nums"
-              style={{
-                fontSize: 180,
-                color: ['#ef4444', '#f59e0b', '#22c55e'][countdown - 1] || '#fff',
-                textShadow: `0 0 80px currentColor`,
-                WebkitTextStroke: '3px rgba(255,255,255,0.3)',
-              }}
-            >{countdown}</div>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                className="w-10 h-10 sm:w-14 sm:h-14 rounded-full border-2 border-white/30 transition-all duration-150"
+                style={{
+                  background: i <= redLightsOn ? '#ef4444' : 'rgba(80,0,0,0.6)',
+                  boxShadow: i <= redLightsOn ? '0 0 30px #ef4444, inset 0 0 15px rgba(255,100,100,0.5)' : 'none',
+                }}
+              />
+            ))}
           </motion.div>
         )}
-        {countdown === 0 && (
+        {goVisible && (
           <motion.div
             key="go"
             initial={{ scale: 2.5, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.3, opacity: 0, y: -20 }}
+            transition={{ duration: 0.25 }}
             className="absolute inset-0 flex items-center justify-center"
           >
-            <div style={{ fontSize: 120, fontWeight: 900, color: '#fbbf24', textShadow: '0 0 60px #fbbf24, 0 0 120px #f59e0b', WebkitTextStroke: '2px rgba(255,255,255,0.4)' }}>
+            <div style={{ fontSize: 120, fontWeight: 900, color: '#22c55e', textShadow: '0 0 60px #22c55e, 0 0 120px #16a34a', WebkitTextStroke: '2px rgba(255,255,255,0.4)' }}>
               GO!
             </div>
           </motion.div>

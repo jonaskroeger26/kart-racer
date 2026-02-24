@@ -4,7 +4,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const TRACK_WIDTH = 20;
 const BOOST_DURATION = 120;
-const NUM_AI = 15;
+const NUM_AI = 8;
+const RED_LIGHTS_DURATION = 7; // F1 style: lights on 1-5, hold, then all out = go
 const LAPS_TO_WIN = 3;
 const OFF_TRACK_RESPAWN_SEC = 2;
 const COLLISION_DIST = 10;
@@ -14,11 +15,11 @@ const PIT_ZONE_T_START = 0.96;
 const PIT_ZONE_T_END = 0.04;
 const PIT_STOP_DURATION_SEC = 2.5;
 
-// Oval from ellipse — mathematically cannot self-intersect. No crossing, no X, no fences on track.
+// Oval from ellipse — 10x longer lap; no self-intersect.
 function createTrackPath() {
-  const a = 280; // half-width (x)
-  const b = 200; // half-length (z)
-  const n = 48;  // number of points — start at bottom (0, 0, -b)
+  const a = 2800; // half-width (x) — 10x for much longer lap
+  const b = 2000; // half-length (z)
+  const n = 48;
   const pts = [];
   for (let i = 0; i < n; i++) {
     const t = (i / n) * Math.PI * 2 - Math.PI / 2; // start at bottom
@@ -130,7 +131,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
-    const TRACK_SCALE = 0.0000028;
+    const TRACK_SCALE = 0.00000028; // 10x smaller so lap is 10x longer
+    const LATERAL_SCALE = 550 * 0.0000028; // keep turning feel same as before
 
     const kartPhysics = {
       speeder:  { thrust: 5.2, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 28, speedMax: diff.speedMax * 1.08 },
@@ -142,7 +144,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
-    scene.fog = new THREE.Fog(0xb0d8f0, 200, 600);
+    scene.fog = new THREE.Fog(0xb0d8f0, 800, 3500);
 
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
 
@@ -160,9 +162,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     sun.position.set(120, 220, 80);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.camera.left = -400; sun.shadow.camera.right = 400;
-    sun.shadow.camera.top = 400; sun.shadow.camera.bottom = -400;
-    sun.shadow.camera.far = 600; sun.shadow.bias = -0.0003;
+    sun.shadow.camera.left = -2000; sun.shadow.camera.right = 2000;
+    sun.shadow.camera.top = 2000; sun.shadow.camera.bottom = -2000;
+    sun.shadow.camera.far = 3500; sun.shadow.bias = -0.0003;
     scene.add(sun);
     scene.add(new THREE.DirectionalLight(0xc8e0ff, 0.7).position.set(-80, 60, -60) && new THREE.DirectionalLight(0xc8e0ff, 0.7));
     scene.add(new THREE.HemisphereLight(0x87ceeb, 0x4a8c2a, 0.5));
@@ -171,7 +173,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const trackPoints = trackCurve.getPoints(2400);
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(2000, 2000),
+      new THREE.PlaneGeometry(12000, 12000),
       new THREE.MeshStandardMaterial({ color: 0x2d5a1e, roughness: 0.95, metalness: 0 })
     );
     ground.rotation.x = -Math.PI / 2;
@@ -361,6 +363,28 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       }
     }
 
+    // F1-style starting blocks (raised pads at grid positions)
+    const blockMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.4, roughness: 0.7 });
+    const gridRowOffsetsBlock = [-8, -2.5, 2.5, 8];
+    const gridTrackTOffsetBlock = 0.00035;
+    for (let row = 0; row < 3; row++) {
+      const t = row === 0 ? 0 : -row * gridTrackTOffsetBlock;
+      const pt = trackCurve.getPointAt((t + 1) % 1);
+      const tan = trackCurve.getTangentAt((t + 1) % 1);
+      const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0,1,0)).normalize();
+      const count = row === 0 ? 1 : 4;
+      for (let col = 0; col < count; col++) {
+        const lat = row === 0 ? 0 : gridRowOffsetsBlock[col];
+        const pos = pt.clone().addScaledVector(right, lat);
+        pos.y = ASPHALT_Y + 0.02;
+        const block = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, 0.9), blockMat);
+        block.position.copy(pos);
+        block.rotation.x = -Math.PI / 2;
+        block.rotation.y = Math.atan2(tan.x, tan.z);
+        scene.add(block);
+      }
+    }
+
     const drsT = 0.42;
     const drsPos = trackCurve.getPointAt(drsT);
     const drsTang = trackCurve.getTangentAt(drsT);
@@ -471,17 +495,24 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       { name: 'erratic',    rbStrength: 0.060, rbCap: 0.20, topSpeedMult: 1.02, racingLineFidelity: 0.55, itemUseGap: 0.02, laneWander: 0.04 },
     ];
 
+    // F1-style grid: 2 rows of 4, player on pole. Offsets in meters (lateral), trackT behind start.
+    const gridRowOffsets = [-8, -2.5, 2.5, 8];
+    const gridTrackTOffset = 0.00035;
+
     for (let i = 0; i < NUM_AI; i++) {
       const car = new THREE.Group();
       scene.add(car);
-      const startT = (i + 1) * 0.012;
+      const row = Math.floor(i / 4);
+      const col = i % 4;
+      const startT = (row + 1) * -gridTrackTOffset;
+      const startOffset = gridRowOffsets[col];
       const personality = personalities[i % personalities.length];
       const topSpeed = aiBaseSpeed * personality.topSpeedMult * (0.95 + Math.random() * 0.10);
       aiKarts.push({
         mesh: car, trackT: startT, lastT: startT,
-        speed: topSpeed * 0.3, topSpeed,
-        offset: (i % 2 === 0 ? 1 : -1) * (2 + (i % 3) * 1.2),
-        targetOffset: 0, lap: 0,
+        speed: 0, topSpeed,
+        offset: startOffset,
+        targetOffset: startOffset, lap: 0,
         wobble: Math.random() * Math.PI * 2,
         personality, hasItem: false, itemCooldown: 0,
         rbPhase: Math.random() * Math.PI * 2, rbNoiseT: 0,
@@ -517,15 +548,17 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       lastOnTrackT: 0,
     };
 
-    let startTime = Date.now(), countdown = 3, raceStarted = false, frame = 0;
+    let startTime = Date.now(), greenTime = null, raceStarted = false, frame = 0;
 
     function animate() {
       animFrameRef.current = requestAnimationFrame(animate);
       frame++;
-      const elapsed = (Date.now()-startTime)/1000;
+      const elapsed = (Date.now() - startTime) / 1000;
       if (!raceStarted) {
-        countdown = Math.max(0, 3-Math.floor(elapsed));
-        if (elapsed>=4) { raceStarted=true; startTime=Date.now(); }
+        if (elapsed >= RED_LIGHTS_DURATION) {
+          raceStarted = true;
+          greenTime = Date.now();
+        }
       }
 
       itemBoxes.forEach(box => {
@@ -582,8 +615,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         // ── LATERAL MOVEMENT WITH MOMENTUM ──
         // The car has lateral inertia — it doesn't snap direction instantly.
         // This gives a weight-transfer / sliding feel in corners.
-        const trackLenWorld = 550;
-        const lateralScale = trackLenWorld * TRACK_SCALE;
+        const lateralScale = LATERAL_SCALE;
         const wantedLateralVel = -ps.speed * Math.sin(ps.heading) * lateralScale;
         // grip: how fast lateral vel tracks desired (lower = more sliding)
         const grip = 0.20 + speedNorm * 0.06;
@@ -621,7 +653,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
         if (ps.lastT>0.97&&ps.trackT<0.03) {
           ps.lap++;
-          if (ps.lap>=LAPS_TO_WIN) { ps.finished=true; ps.finishTime=(Date.now()-startTime)/1000; }
+          if (ps.lap>=LAPS_TO_WIN) { ps.finished=true; ps.finishTime=greenTime?(Date.now()-greenTime)/1000:0; }
         }
 
         itemBoxes.forEach(box => {
@@ -780,6 +812,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       camera.position.lerp(playerCarRef.current.position.clone().add(camBack),0.09);
       camera.lookAt(playerCarRef.current.position.clone().setY(playerCarRef.current.position.y+1.2));
 
+      const preGreenElapsed = (Date.now() - startTime) / 1000;
+      const redLightsOn = !raceStarted ? (preGreenElapsed >= 5 ? 5 : Math.min(5, Math.floor(preGreenElapsed) + 1)) : 0;
+
       if (onGameState) {
         onGameState({
           speed: Math.abs(ps.speed/physics.speedMax*300).toFixed(0),
@@ -789,8 +824,11 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           totalRacers: NUM_AI+1,
           hasItem: ps.hasItem,
           boost: ps.boost>0,
-          countdown: !raceStarted?countdown:null,
-          raceTime: raceStarted?(Date.now()-startTime)/1000:0,
+          countdown: raceStarted ? null : (redLightsOn === 5 && preGreenElapsed >= 5 ? 0 : null),
+          redLightsOn: raceStarted ? 0 : redLightsOn,
+          lightsOut: raceStarted,
+          goVisible: raceStarted && greenTime && (Date.now() - greenTime) < 1500,
+          raceTime: raceStarted && greenTime ? (Date.now()-greenTime)/1000 : 0,
           finished: ps.finished,
           finishTime: ps.finishTime,
           playerTrackT: normT,
