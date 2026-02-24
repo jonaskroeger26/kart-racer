@@ -741,7 +741,17 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
   }, [kartColor, kartType, difficulty]);
 
-  useEffect(() => { const c=initGame(); return c; }, [initGame]);
+  useEffect(() => {
+    // Use rAF to ensure the DOM is painted and container has real dimensions
+    let cleanup;
+    const rafId = requestAnimationFrame(() => {
+      cleanup = initGame();
+    });
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (cleanup) cleanup();
+    };
+  }, [initGame]);
 
   useEffect(() => {
     const kd=(e)=>{ keysRef.current[e.code]=true; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault(); };
