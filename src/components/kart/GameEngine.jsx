@@ -789,14 +789,17 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         const SPEED_MAX = physics.speedMax * boostMult;
 
         if (keys['ArrowUp'] || keys['KeyW']) {
-          // F1 thrust-drag model: fast off the line, tapers as aero drag grows (∝ v²)
+          // Accelerate only while holding throttle
           const drag = physics.drag * ps.speed * ps.speed;
           const thrust = physics.thrust * boostMult;
           ps.speed = Math.min(SPEED_MAX, ps.speed + thrust - drag);
         } else if (keys['ArrowDown'] || keys['KeyS']) {
           ps.speed = Math.max(-40, ps.speed - physics.braking);
         } else {
-          ps.speed = Math.max(0, ps.speed - physics.friction);
+          // No throttle: slow down quickly (engine braking + drag), don’t coast on your own
+          const engineBraking = 2.2;
+          const drag = physics.drag * ps.speed * ps.speed;
+          ps.speed = Math.max(0, ps.speed - engineBraking - drag);
         }
 
         const si = (keys['ArrowLeft']||keys['KeyA'])?-1:(keys['ArrowRight']||keys['KeyD'])?1:0;
