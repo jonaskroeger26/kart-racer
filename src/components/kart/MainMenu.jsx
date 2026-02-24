@@ -361,9 +361,8 @@ export default function MainMenu({ onStart }) {
               <span>·</span>
               <span>SPACE — Use Item</span>
             </div>
-          </motion.div>
+          </div>
         )}
-
 
         {/* ═══════════════ KART SELECT ═══════════════ */}
         {screen === 'select' && (
