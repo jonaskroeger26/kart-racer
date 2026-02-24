@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const TRACK_WIDTH = 20;
 const BOOST_DURATION = 120;
-const NUM_AI = 7;
+const NUM_AI = 15;
 const LAPS_TO_WIN = 3;
 
 // F1-style circuit: main straight, heavy T1, esses, back straight, hairpin, twisty return
@@ -307,8 +307,8 @@ function loadRB21Car() {
   });
 }
 
-// Clone RB21 model and tint all materials to a team color (for AI cars)
-function cloneRB21WithColor({ model, scale }, colorHex) {
+// Clone RB21 and apply a livery color (so each AI has a distinct team look)
+function cloneRB21WithLiveryColor({ model }, colorHex) {
   const clone = model.clone(true);
   clone.traverse((child) => {
     if (child.isMesh && child.material) {
@@ -316,7 +316,7 @@ function cloneRB21WithColor({ model, scale }, colorHex) {
       mats.forEach((mat) => {
         const m = mat.clone();
         m.color.setHex(colorHex);
-        if (m.emissive) m.emissive.setHex(colorHex).multiplyScalar(0.15);
+        if (m.emissive) m.emissive.setHex(colorHex).multiplyScalar(0.12);
         if (Array.isArray(child.material)) {
           const i = child.material.indexOf(mat);
           child.material[i] = m;
@@ -645,7 +645,11 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     }
 
     // ── CARS (player + AI: RB21 GLB if available, else procedural; AI get different colors) ──
-    const aiColors = [0xff6600, 0x1155ff, 0x22cc55, 0xffcc00, 0xcc44ff, 0xff2222, 0x00ccff];
+    // 15 distinct livery colors (F1 team–inspired: Orange, Ferrari red, Mercedes teal, McLaren orange, Alpine blue, etc.)
+    const aiColors = [
+      0xff6600, 0xdc0000, 0x00d2be, 0xff8700, 0x0090ff, 0x2b4562, 0x006f62, 0x005aff,
+      0xe6002d, 0x0a2e5c, 0xf596c8, 0x37bedd, 0x393839, 0xfbdb0c, 0x8436b8,
+    ];
     const playerCarRef = { current: createF1Car(kartColor) };
     scene.add(playerCarRef.current);
     const aiKarts = [];
@@ -725,7 +729,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       });
     }
 
-    // When RB21 loads, replace player and all AI with same car model (AI in their team colors)
+    // When RB21 loads, replace player (original livery) and AI (each with its own livery color)
     loadRB21Car()
       .then((rb21) => {
         scene.remove(playerCarRef.current);
@@ -733,7 +737,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         scene.add(rb21.group);
         aiKarts.forEach((ai, i) => {
           scene.remove(ai.mesh);
-          const clone = cloneRB21WithColor(rb21, aiColors[i]);
+          const clone = cloneRB21WithLiveryColor(rb21, aiColors[i]);
           scene.add(clone);
           ai.mesh = clone;
         });
