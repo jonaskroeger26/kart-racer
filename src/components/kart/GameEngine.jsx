@@ -291,17 +291,21 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
-    // speedMax is in km/h display units. Internally speed is in km/h, converted to trackT per frame.
-    // Real F1: 0-100 in ~2.5s, 0-200 in ~5s, 0-300 in ~9s
-    // At 60fps: 2.5s = 150 frames, so we need ~100/150 = 0.67 km/h gain per frame early on,
-    // tapering off at high speed (aero drag). We model this as: accelForce - dragForce
-    // accelForce = constant thrust; dragForce = drag * speed^2
+    // Speed is stored in km/h. Track step per frame = speed * TRACK_SCALE.
+    // TRACK_SCALE tuned so 300 km/h feels like real racing pace on this circuit.
+    // Real F1 accel: 0→100 in ~2.5s (150 frames), 0→300 in ~9s (540 frames).
+    // Thrust-drag model: dV = thrust - drag*V^2  per frame.
+    // At terminal (300 km/h): thrust = drag * 300^2  →  drag = thrust / 90000
+    // For 0→100 in 150 frames: roughly thrust ≈ 1.3 km/h/frame early on.
+    // thrust=1.35, drag=1.35/90000=0.000015 → terminal ~300 km/h, ~2.5s to 100 ✓
+    const TRACK_SCALE = 0.000006; // trackT units per km/h per frame
+
     const kartPhysics = {
-      //               thrust  drag        turn   friction  braking  speedMax
-      speeder:  { thrust: 4.8, drag: 0.000145, turn: 0.055, friction: 0.3, braking: 18, speedMax: diff.speedMax * 1.08 },
-      balanced: { thrust: 4.2, drag: 0.000140, turn: 0.060, friction: 0.28, braking: 16, speedMax: diff.speedMax },
-      heavy:    { thrust: 3.6, drag: 0.000138, turn: 0.045, friction: 0.22, braking: 14, speedMax: diff.speedMax * 0.92 },
-      offroad:  { thrust: 4.0, drag: 0.000142, turn: 0.065, friction: 0.26, braking: 15, speedMax: diff.speedMax * 0.96 },
+      //               thrust   drag         turn    friction  braking  speedMax
+      speeder:  { thrust: 1.45, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 28, speedMax: diff.speedMax * 1.08 },
+      balanced: { thrust: 1.35, drag: 0.0000150, turn: 0.060, friction: 0.7, braking: 25, speedMax: diff.speedMax },
+      heavy:    { thrust: 1.20, drag: 0.0000148, turn: 0.045, friction: 0.55, braking: 22, speedMax: diff.speedMax * 0.92 },
+      offroad:  { thrust: 1.30, drag: 0.0000152, turn: 0.065, friction: 0.65, braking: 24, speedMax: diff.speedMax * 0.96 },
     };
     const physics = kartPhysics[kartType] || kartPhysics.balanced;
 
