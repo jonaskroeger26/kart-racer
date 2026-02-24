@@ -818,18 +818,19 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
         // Car physics: steering changes heading (turn wheel), movement follows heading
         const si = (keys['ArrowLeft']||keys['KeyA'])?1:(keys['ArrowRight']||keys['KeyD'])?-1:0;
-        const steerRate = 0.0018 * Math.max(0.4, ps.speed / physics.speedMax);
+        const steerRate = 0.014 * Math.max(0.5, ps.speed / physics.speedMax); // responsive turn rate
         if (si !== 0) {
           ps.heading += si * steerRate;
         } else {
-          ps.heading *= 0.96; // recenter steering when not turning
+          ps.heading *= 0.94; // recenter when not steering
         }
-        const MAX_HEADING = 0.52;
+        const MAX_HEADING = 0.55;
         ps.heading = Math.max(-MAX_HEADING, Math.min(MAX_HEADING, ps.heading));
 
         // Move along track by cos(heading), lateral by sin(heading) (car drives where it points)
         const trackLenWorld = 550;
         const lateralScale = trackLenWorld * TRACK_SCALE;
+        ps.lastT = ps.trackT;
         ps.trackT = (ps.trackT + ps.speed * Math.cos(ps.heading) * TRACK_SCALE + 1) % 1;
         ps.lateralOffset -= ps.speed * Math.sin(ps.heading) * lateralScale;
 
@@ -857,8 +858,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
         if (ps.collisionCooldown > 0) ps.collisionCooldown--;
 
-        ps.lastT = ps.trackT;
-        ps.trackT = (ps.trackT + ps.speed * TRACK_SCALE + 1) % 1;
         if (ps.lastT>0.97&&ps.trackT<0.03) {
           ps.lap++;
           if (ps.lap>=LAPS_TO_WIN) { ps.finished=true; ps.finishTime=(Date.now()-startTime)/1000; }
