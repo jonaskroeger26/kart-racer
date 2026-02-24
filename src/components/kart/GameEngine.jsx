@@ -651,15 +651,13 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         const SPEED_MAX = physics.speedMax * boostMult;
 
         if (keys['ArrowUp'] || keys['KeyW']) {
-          // Physics: thrust - aerodynamic drag (drag ∝ v²), capped at speedMax
-          // This gives F1-like curve: fast early, tapers at high speed
+          // F1 thrust-drag model: fast off the line, tapers as aero drag grows (∝ v²)
           const drag = physics.drag * ps.speed * ps.speed;
           const thrust = physics.thrust * boostMult;
           ps.speed = Math.min(SPEED_MAX, ps.speed + thrust - drag);
         } else if (keys['ArrowDown'] || keys['KeyS']) {
-          ps.speed = Math.max(-30, ps.speed - physics.braking);
+          ps.speed = Math.max(-40, ps.speed - physics.braking);
         } else {
-          // Engine braking / coast — gentle deceleration
           ps.speed = Math.max(0, ps.speed - physics.friction);
         }
 
