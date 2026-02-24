@@ -114,6 +114,20 @@ function cloneRB21WithLiveryColor({ model }, colorHex) {
   return group;
 }
 
+// Rotate wheel meshes by speed (km/h) so they roll with movement
+const WHEEL_ROLL_SPEED = 0.00045;
+function updateWheelRotation(carGroup, speedKmh) {
+  if (!carGroup || speedKmh <= 0) return;
+  const delta = speedKmh * WHEEL_ROLL_SPEED;
+  carGroup.traverse((child) => {
+    if (!child.isMesh || !child.name) return;
+    const name = child.name.toLowerCase();
+    if (/wheel|tire|tyre|rim|radius/.test(name)) {
+      child.rotation.x -= delta;
+    }
+  });
+}
+
 export default function GameEngine({ onGameState, kartColor, kartType, difficulty }) {
   const mountRef = useRef(null);
   const keysRef = useRef({});
@@ -136,7 +150,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
-    const TRACK_SCALE = 0.00000028;
+    const TRACK_SCALE = 0.00000028 * 3.5;
     const LATERAL_SCALE = 550 * 0.0000028;
 
     const kartPhysics = {
@@ -681,6 +695,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const driveDir = pDir.clone().applyAxisAngle(new THREE.Vector3(0,1,0), ps.heading);
       playerCar.lookAt(playerCar.position.clone().add(driveDir));
       playerCar.rotateY(Math.PI);
+      updateWheelRotation(playerCar, ps.speed);
 
       if (ps.boost>0&&frame%2===0) {
         const fl = new THREE.Mesh(
@@ -780,6 +795,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         ai.mesh.position.y += 0.12;
         ai.mesh.lookAt(ai.mesh.position.clone().add(aDir));
         ai.mesh.rotateY(Math.PI);
+        updateWheelRotation(ai.mesh, ai.speed);
       });
 
       if (raceStarted && !ps.finished && ps.collisionCooldown <= 0) {
