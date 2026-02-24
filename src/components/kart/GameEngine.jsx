@@ -121,8 +121,12 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
   const initGame = useCallback(() => {
     if (!mountRef.current) return;
     const container = mountRef.current;
-    const width = container.clientWidth || window.innerWidth;
-    const height = container.clientHeight || window.innerHeight;
+    let width = container.clientWidth || window.innerWidth;
+    let height = container.clientHeight || window.innerHeight;
+    if (!width || !height) {
+      width = window.innerWidth || 800;
+      height = window.innerHeight || 600;
+    }
 
     const diffSettings = {
       easy:   { aiSpeed: 0.55, aiVar: 0.08, speedMax: 120 },
@@ -156,6 +160,17 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
     container.appendChild(renderer.domElement);
+
+    const applySize = () => {
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+    };
+    requestAnimationFrame(applySize);
 
     scene.add(new THREE.AmbientLight(0xffffff, 1.0));
     const sun = new THREE.DirectionalLight(0xfff8e8, 2.2);
@@ -848,8 +863,13 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     animate();
 
     const handleResize = () => {
-      const w=container.clientWidth, h=container.clientHeight;
-      camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h);
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
     };
     window.addEventListener('resize', handleResize);
     return () => {

@@ -25,18 +25,20 @@ export default function KartRacer() {
   }, []);
 
   return (
-    <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-black">
+    <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-black flex flex-col">
       {!config ? (
         <MainMenu onStart={handleStart} />
       ) : (
         <>
-          <GameEngine
+          <div className="relative flex-1 min-h-0 w-full">
+            <GameEngine
             key={gameKey}
             onGameState={handleGameState}
             kartColor={config.kartColor}
             kartType={config.kartType}
             difficulty={config.difficulty}
           />
+          </div>
           <RaceHUD gameState={gameState} kartHex={config.kartHex} onBackToMenu={handleBackToMenu} />
           <MobileControls />
         </>
