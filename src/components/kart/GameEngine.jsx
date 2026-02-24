@@ -1081,7 +1081,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
         itemBoxes.forEach(box => {
           if (box.userData.active) {
-            const bPos = box.children[0].position;
+            const bPos = box.position;
             if (playerCar.position.distanceTo(bPos) < 4 && !playerState.hasItem) {
               playerState.hasItem = true;
               box.userData.active = false;
