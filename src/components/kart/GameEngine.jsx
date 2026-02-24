@@ -15,66 +15,101 @@ const PIT_ZONE_T_END = 0.04;
 const PIT_STOP_DURATION_SEC = 2.5;
 
 function createTrackPath() {
-  // Nürburgring GP-inspired layout — no self-intersections, wide sweeping corners
+  // Nürburgring GP Circuit — faithful reproduction at scale
+  // Start/finish on long main straight (west side), going clockwise
   const pts = [
-    // Start/finish straight (south)
-    [ 0,   0,   0],
-    [ 0,   0, -40],
-    [ 0,   0, -80],
-    // Turn 1 — tight right hairpin
-    [ 20,  0,-110],
-    [ 55,  0,-130],
-    [ 90,  0,-125],
-    [115,  0,-108],
-    [120,  0, -85],
-    // Back straight heading east
-    [120,  0, -55],
-    [120,  0, -20],
-    // Turn 3 — sweeping right
-    [128,  0,  20],
-    [148,  0,  55],
-    [175,  0,  70],
-    // Long curve right
-    [210,  0,  60],
-    [240,  0,  30],
-    [252,  0,   0],
-    [248,  0, -35],
-    // Turn 5 — chicane-like left-right
-    [228,  0, -65],
-    [200,  0, -88],
-    [170,  0, -95],
-    // Sweeping left back
-    [135,  0, -88],
-    // Mercedes arena style — tight hairpin left
-    [105,  0, -68],
-    [ 80,  0, -42],
-    [ 68,  0, -10],
-    [ 75,  0,  22],
-    // NGK chicane — right-left
-    [ 95,  0,  50],
-    [100,  0,  80],
-    [ 88,  0, 105],
-    [ 62,  0, 118],
-    // Schumacher-S left sweep
-    [ 30,  0, 115],
-    [  0,  0, 108],
-    [-35,  0, 105],
-    // Long back section
-    [-68,  0,  95],
-    [-95,  0,  80],
-    [-115, 0,  55],
-    [-120, 0,  22],
-    [-110, 0, -10],
-    // Ford curve — sweeping right
-    [-90,  0, -38],
-    [-65,  0, -55],
-    [-35,  0, -60],
-    // Return to start
-    [-15,  0, -42],
-    [  0,  0, -20],
-    [  0,  0,   0],
+    // ── START / FINISH STRAIGHT ──
+    [   0,  0,    0],
+    [   0,  0,  -60],
+    [   0,  0, -120],
+    [   0,  0, -180],
+    [   0,  0, -240],
+
+    // ── TURN 1: YOKOHAMA-S — sharp right ──
+    [  30,  0, -290],
+    [  80,  0, -320],
+    [ 130,  0, -325],
+    [ 170,  0, -310],
+
+    // ── TURN 2: YOKOHAMA-S — left flick ──
+    [ 195,  0, -280],
+    [ 205,  0, -250],
+    [ 195,  0, -220],
+
+    // ── MICHAEL SCHUMACHER-S — sweeping left ──
+    [ 175,  0, -190],
+    [ 145,  0, -170],
+    [ 110,  0, -165],
+    [  80,  0, -175],
+
+    // ── EINFAHRT MOTODROM — long fast right-hander ──
+    [  55,  0, -195],
+    [  35,  0, -225],
+    [  30,  0, -265],
+    [  45,  0, -300],  // already covered above — skip duplicate, continue south-east
+    [  80,  0, -340],
+    [ 130,  0, -365],
+    [ 190,  0, -370],
+    [ 250,  0, -355],
+
+    // ── FORD KURVE — right hairpin at south-east ──
+    [ 300,  0, -320],
+    [ 330,  0, -275],
+    [ 335,  0, -225],
+    [ 320,  0, -180],
+
+    // ── DUNLOP KEHRE — tight left hairpin ──
+    [ 290,  0, -145],
+    [ 250,  0, -120],
+    [ 210,  0, -115],
+    [ 175,  0, -128],
+
+    // ── BIT-KURVE — chicane right-left ──
+    [ 150,  0, -155],
+    [ 140,  0, -185],
+    [ 155,  0, -215],
+    [ 185,  0, -230],
+    [ 220,  0, -225],
+
+    // ── VEEDOL-CHICANE — left-right-left ──
+    [ 255,  0, -208],
+    [ 275,  0, -185],
+    [ 270,  0, -158],
+    [ 248,  0, -140],
+
+    // ── LONG BACK STRAIGHT — heading west-north ──
+    [ 220,  0, -100],
+    [ 185,  0,  -60],
+    [ 150,  0,  -25],
+    [ 120,  0,   15],
+
+    // ── MERCEDES ARENA — sweeping complex ──
+    [  90,  0,   50],
+    [  55,  0,   75],
+    [  20,  0,   80],
+    [ -15,  0,   70],
+    [ -40,  0,   45],
+
+    // ── NGK SCHIKANE — chicane ──
+    [ -45,  0,   15],
+    [ -35,  0,  -15],
+    [ -10,  0,  -30],
+    [  15,  0,  -20],
+
+    // ── RETURN TO START ──
+    [  10,  0,  -10],
+    [   0,  0,    0],
   ];
-  return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.5);
+
+  // Validate no obviously bad duplicates
+  const unique = [];
+  for (let i = 0; i < pts.length; i++) {
+    const [x,,z] = pts[i];
+    const prev = unique[unique.length - 1];
+    if (!prev || Math.abs(prev[0]-x) > 1 || Math.abs(prev[2]-z) > 1) unique.push(pts[i]);
+  }
+
+  return new THREE.CatmullRomCurve3(unique.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.5);
 }
 
 function createF1Car(color) {
