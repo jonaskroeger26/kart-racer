@@ -764,7 +764,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     // ── PLAYER STATE ──
     const ps = {
       trackT: 0, speed: 0, lateralOffset: 0, lap: 0,
-      heading: 0, // rad, yaw relative to track tangent; steering rotates car, movement follows heading
+      heading: 0,       // current yaw angle relative to track tangent
+      steerVel: 0,      // steering angular velocity (builds up, then decays)
+      lateralVel: 0,    // lateral velocity carries momentum (sliding feel)
       lastT: 0, boost: 0, hasItem: false, position: 1,
       finished: false, finishTime: null,
       damaged: false,
