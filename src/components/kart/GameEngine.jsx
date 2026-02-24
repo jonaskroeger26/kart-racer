@@ -387,7 +387,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
-    const TRACK_SCALE = 0.000006;
+    const TRACK_SCALE = 0.0000028;
 
     const kartPhysics = {
       speeder:  { thrust: 1.45, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 28, speedMax: diff.speedMax * 1.08 },
