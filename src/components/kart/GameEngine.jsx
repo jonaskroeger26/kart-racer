@@ -14,91 +14,32 @@ const PIT_ZONE_T_START = 0.96;
 const PIT_ZONE_T_END = 0.04;
 const PIT_STOP_DURATION_SEC = 2.5;
 
+// Nürburgring Nordschleife–style: long lap, elevation, twisty sections, Karussell-style bend
 function createTrackPath() {
-  // Nürburgring GP Circuit — faithful reproduction at scale
-  // Start/finish on long main straight (west side), going clockwise
   const pts = [
-    // ── START / FINISH STRAIGHT ──
-    [   0,  0,    0],
-    [   0,  0,  -60],
-    [   0,  0, -120],
-    [   0,  0, -180],
-    [   0,  0, -240],
-
-    // ── TURN 1: YOKOHAMA-S — sharp right ──
-    [  30,  0, -290],
-    [  80,  0, -320],
-    [ 130,  0, -325],
-    [ 170,  0, -310],
-
-    // ── TURN 2: YOKOHAMA-S — left flick ──
-    [ 195,  0, -280],
-    [ 205,  0, -250],
-    [ 195,  0, -220],
-
-    // ── MICHAEL SCHUMACHER-S — sweeping left ──
-    [ 175,  0, -190],
-    [ 145,  0, -170],
-    [ 110,  0, -165],
-    [  80,  0, -175],
-
-    // ── EINFAHRT MOTODROM — long fast right-hander ──
-    [  55,  0, -195],
-    [  35,  0, -225],
-    [  30,  0, -265],
-    [  45,  0, -300],  // already covered above — skip duplicate, continue south-east
-    [  80,  0, -340],
-    [ 130,  0, -365],
-    [ 190,  0, -370],
-    [ 250,  0, -355],
-
-    // ── FORD KURVE — right hairpin at south-east ──
-    [ 300,  0, -320],
-    [ 330,  0, -275],
-    [ 335,  0, -225],
-    [ 320,  0, -180],
-
-    // ── DUNLOP KEHRE — tight left hairpin ──
-    [ 290,  0, -145],
-    [ 250,  0, -120],
-    [ 210,  0, -115],
-    [ 175,  0, -128],
-
-    // ── BIT-KURVE — chicane right-left ──
-    [ 150,  0, -155],
-    [ 140,  0, -185],
-    [ 155,  0, -215],
-    [ 185,  0, -230],
-    [ 220,  0, -225],
-
-    // ── VEEDOL-CHICANE — left-right-left ──
-    [ 255,  0, -208],
-    [ 275,  0, -185],
-    [ 270,  0, -158],
-    [ 248,  0, -140],
-
-    // ── LONG BACK STRAIGHT — heading west-north ──
-    [ 220,  0, -100],
-    [ 185,  0,  -60],
-    [ 150,  0,  -25],
-    [ 120,  0,   15],
-
-    // ── MERCEDES ARENA — sweeping complex ──
-    [  90,  0,   50],
-    [  55,  0,   75],
-    [  20,  0,   80],
-    [ -15,  0,   70],
-    [ -40,  0,   45],
-
-    // ── NGK SCHIKANE — chicane ──
-    [ -45,  0,   15],
-    [ -35,  0,  -15],
-    [ -10,  0,  -30],
-    [  15,  0,  -20],
-
-    // ── RETURN TO START ──
-    [  10,  0,  -10],
-    [   0,  0,    0],
+    // Start/Finish straight (Döttinger Höhe style)
+    [0, 0, 0], [0, 0, -25], [0, 0, -55], [0, 0, -90], [0, 0, -125], [0, 0, -160],
+    // Tiergarten / turn into twisty section
+    [18, 0.5, -185], [50, 1, -200], [95, 1.5, -208], [140, 2, -205], [180, 1.5, -188],
+    // Hatzenbach (twisty esses)
+    [210, 1, -158], [228, 0.5, -118], [235, 0, -75], [228, -0.3, -35], [212, -0.5, 5],
+    [188, -0.3, 38], [158, 0, 62], [122, 0.5, 78], [82, 0.8, 85],
+    // Hocheichen / Quiddelbacher Höhe (long curve, slight elevation)
+    [40, 1.2, 82], [0, 1.5, 78], [-42, 1.2, 82], [-85, 0.6, 88], [-125, 0, 85],
+    // Flugplatz (crest – bump)
+    [-162, -0.5, 72], [-195, -1, 52], [-218, -1.2, 25], [-232, -0.8, -8], [-235, -0.3, -42],
+    // Aremberg / Adenauer Forst (winding)
+    [-222, 0.2, -75], [-198, 0.5, -102], [-165, 0.6, -120], [-125, 0.5, -130], [-82, 0.3, -132],
+    [-40, 0, -128], [0, -0.2, -118], [38, -0.3, -102], [72, -0.2, -82], [98, 0, -58],
+    // Karussell-style banked curve (long right)
+    [112, 0.3, -30], [118, 0.5, 5], [108, 0.5, 38], [88, 0.3, 65], [58, 0, 82],
+    [22, -0.2, 88], [-18, -0.2, 85], [-58, 0, 75], [-95, 0.3, 58], [-128, 0.5, 35],
+    [-152, 0.5, 5], [-168, 0.3, -28], [-175, 0, -62], [-172, -0.2, -95],
+    // Pflanzgarten / Schwedenkreuz (twisty return)
+    [-158, -0.3, -122], [-132, -0.2, -142], [-98, 0, -155], [-58, 0.2, -162], [-22, 0.2, -162],
+    [15, 0.1, -155], [48, 0, -142], [72, -0.1, -122], [88, -0.2, -98], [92, -0.2, -72],
+    // Return to main straight
+    [88, -0.1, -48], [75, 0, -28], [55, 0, -12], [28, 0, -5], [0, 0, 0],
   ];
 
   // Validate no obviously bad duplicates
@@ -109,7 +50,7 @@ function createTrackPath() {
     if (!prev || Math.abs(prev[0]-x) > 1 || Math.abs(prev[2]-z) > 1) unique.push(pts[i]);
   }
 
-  return new THREE.CatmullRomCurve3(unique.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.5);
+  return new THREE.CatmullRomCurve3(unique.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.4);
 }
 
 function createF1Car(color) {
@@ -528,35 +469,57 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     scene.add(buildMesh(gV,  gI,  grassMat, 0));
     scene.add(buildMesh(wV,  wI,  whiteMat, 2));
 
-    // Armco barriers — placed correctly along track tangent
-    const armcoMat = new THREE.MeshStandardMaterial({ color: 0xbbbbbb, metalness: 0.8, roughness: 0.3 });
-    const postMat  = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.5, roughness: 0.5 });
-    const barrierStep = 8;
-    for (let i = 0; i < trackPoints.length - 1; i += barrierStep) {
-      const curr  = trackPoints[i];
-      const next  = trackPoints[Math.min(i + barrierStep, trackPoints.length - 1)];
-      const dir   = new THREE.Vector3().subVectors(next, curr).normalize();
-      const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0,1,0)).normalize();
-      const segLen = curr.distanceTo(next);
-      const off = half + CURB + 0.6;
-      [-1, 1].forEach(s => {
-        const center = curr.clone()
-          .addScaledVector(right, s * off)
-          .addScaledVector(dir, segLen * 0.5);
-        center.y += 0.22;
-        const rail = new THREE.Mesh(new THREE.BoxGeometry(segLen + 0.2, 0.28, 0.12), armcoMat);
-        rail.position.copy(center);
-        rail.rotation.y = Math.atan2(dir.x, dir.z);
-        scene.add(rail);
-        // Post every other segment
-        if (i % (barrierStep * 2) === 0) {
-          const postPos = curr.clone().addScaledVector(right, s * off);
-          postPos.y += 0.42;
-          const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.85, 0.1), postMat);
-          post.position.copy(postPos);
-          scene.add(post);
+    // ── METAL FENCE BARRIERS (Nürburgring-style guardrails) ──
+    const fencePostMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, metalness: 0.85, roughness: 0.35 });
+    const fenceRailMat = new THREE.MeshStandardMaterial({ color: 0x5c5c5c, metalness: 0.8, roughness: 0.4 });
+    const fenceOffset = half + CURB + GRASS_W - 1;
+    const fencePostHeight = 1.4;
+    const railCount = 3;
+    const fenceStep = 4;
+    for (let side = -1; side <= 1; side += 2) {
+      let prevPos = null;
+      let firstPos = null;
+      for (let i = 0; i < trackPoints.length; i += fenceStep) {
+        const curr = trackPoints[i];
+        const next = trackPoints[(i + fenceStep) % trackPoints.length];
+        const dir = new THREE.Vector3().subVectors(next, curr).normalize();
+        const right = new THREE.Vector3().crossVectors(dir, up).normalize();
+        const pos = curr.clone().addScaledVector(right, side * fenceOffset);
+        pos.y += 0.1;
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, fencePostHeight, 6), fencePostMat);
+        post.position.copy(pos);
+        post.position.y += fencePostHeight / 2;
+        scene.add(post);
+        if (prevPos !== null) {
+          const segLen = pos.distanceTo(prevPos);
+          const railDir = new THREE.Vector3().subVectors(pos, prevPos).normalize();
+          for (let r = 0; r < railCount; r++) {
+            const ry = 0.15 + (r / (railCount - 1)) * (fencePostHeight - 0.35);
+            const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, segLen, 6), fenceRailMat);
+            rail.position.copy(prevPos).lerp(pos, 0.5);
+            rail.position.y += ry;
+            rail.lookAt(rail.position.x + railDir.x, rail.position.y, rail.position.z + railDir.z);
+            rail.rotateX(-Math.PI / 2);
+            scene.add(rail);
+          }
+        } else {
+          firstPos = pos.clone();
         }
-      });
+        prevPos = pos.clone();
+      }
+      if (firstPos && prevPos && firstPos.distanceTo(prevPos) > 0.5) {
+        const segLen = prevPos.distanceTo(firstPos);
+        const railDir = new THREE.Vector3().subVectors(firstPos, prevPos).normalize();
+        for (let r = 0; r < railCount; r++) {
+          const ry = 0.15 + (r / (railCount - 1)) * (fencePostHeight - 0.35);
+          const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, segLen, 6), fenceRailMat);
+          rail.position.copy(prevPos).lerp(firstPos, 0.5);
+          rail.position.y += ry;
+          rail.lookAt(rail.position.x + railDir.x, rail.position.y, rail.position.z + railDir.z);
+          rail.rotateX(-Math.PI / 2);
+          scene.add(rail);
+        }
+      }
     }
 
     const startPos  = trackCurve.getPointAt(0);
