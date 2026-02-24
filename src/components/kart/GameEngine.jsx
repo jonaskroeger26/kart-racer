@@ -581,17 +581,24 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
     const aiColors = [0xff6600, 0x1155ff, 0x22cc55, 0xffcc00, 0xcc44ff, 0xff2222, 0x00ccff];
     const aiKarts = [];
+    // Spread AI behind player on the grid, all going forward (positive T direction)
     for (let i=0;i<NUM_AI;i++) {
       const car = createF1Car(aiColors[i]);
       scene.add(car);
+      // Start slightly behind the player (small negative offset wraps to near 1.0)
+      const startT = 1.0 - (i+1)*0.012;
+      // Each AI has a base speed close to diff.aiSpeed, with slight variation
+      const baseSpeed = diff.aiSpeed + (Math.random()-0.5)*diff.aiVar*0.5;
       aiKarts.push({
         mesh: car,
-        trackT: -(i+1)*0.016,
-        speed: diff.aiSpeed+(Math.random()-0.5)*diff.aiVar,
-        offset: (Math.random()-0.5)*6,
+        trackT: startT,
+        lastT: startT,
+        speed: baseSpeed,         // current speed (units/frame on trackT scale)
+        topSpeed: baseSpeed,      // individual top speed
+        offset: (i % 2 === 0 ? 1 : -1) * (2 + Math.random() * 4), // lane offset
         lap: 0,
-        lastT: -(i+1)*0.016,
         wobble: Math.random()*Math.PI*2,
+        rubberband: 0,            // rubber-band boost/penalty accumulator
       });
     }
 
