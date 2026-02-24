@@ -669,7 +669,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         if (ps.boost>0) ps.boost--;
 
         ps.lastT = ps.trackT;
-        ps.trackT = (ps.trackT + ps.speed*0.000018+1)%1;
+        ps.trackT = (ps.trackT + ps.speed * TRACK_SCALE + 1) % 1;
         if (ps.lastT>0.97&&ps.trackT<0.03) {
           ps.lap++;
           if (ps.lap>=LAPS_TO_WIN) { ps.finished=true; ps.finishTime=(Date.now()-startTime)/1000; }
