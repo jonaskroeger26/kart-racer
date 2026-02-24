@@ -712,8 +712,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           const targetSpeed = ai.topSpeed + rb;
           ai.speed += (targetSpeed - ai.speed) * convergence;
 
-          const tAhead = (ai.trackT + 0.015) % 1;
-          const tang1 = trackCurve.getTangentAt(ai.trackT);
+          const tAhead = ((ai.trackT + 0.015) % 1 + 1) % 1;
+          const safeT = ((ai.trackT % 1) + 1) % 1;
+          const tang1 = trackCurve.getTangentAt(safeT);
           const tang2 = trackCurve.getTangentAt(tAhead);
           const curvature = 1 - tang1.dot(tang2);
           const cornerBrake = curvature * physics.speedMax * (p.name === 'aggressive' ? 0.6 : p.name === 'erratic' ? 0.5 : 0.8);
