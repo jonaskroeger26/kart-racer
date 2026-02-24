@@ -366,8 +366,9 @@ export default function MainMenu({ onStart }) {
 
       {/* ═══════════════ KART SELECT ═══════════════ */}
       {screen === 'select' && (
-          <motion.div
-            key="select"
+        <motion.div
+          key="select"
+
             initial={{ opacity: 0, x: 80 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -80 }}
