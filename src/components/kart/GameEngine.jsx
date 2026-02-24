@@ -948,14 +948,16 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     pit.lookAt(pitPos.x + startRight.x, pitPos.y, pitPos.z + startRight.z);
     scene.add(pit);
 
-    // Item boxes
+    // Item boxes — placed at track edges, not blocking the racing line
     const itemBoxes = [];
-    for (let i = 0; i < 18; i++) {
-      const t = (i / 18) + 0.05;
+    for (let i = 0; i < 12; i++) {
+      const t = (i / 12) + 0.04;
       const pos = trackCurve.getPointAt(t % 1);
       const tang = trackCurve.getTangentAt(t % 1);
       const right = new THREE.Vector3().crossVectors(tang, new THREE.Vector3(0, 1, 0)).normalize();
-      const offset = (Math.random() - 0.5) * TRACK_WIDTH * 0.5;
+      // Place near edges only, not center
+      const side = i % 2 === 0 ? 1 : -1;
+      const offset = side * (TRACK_WIDTH * 0.3 + 2);
       pos.add(right.multiplyScalar(offset));
       const box = createItemBox(pos);
       scene.add(box);
