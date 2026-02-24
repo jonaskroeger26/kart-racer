@@ -18,7 +18,7 @@ export default function KartRacer() {
   }, []);
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-black relative">
+    <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-black">
       {!config ? (
         <MainMenu onStart={handleStart} />
       ) : (

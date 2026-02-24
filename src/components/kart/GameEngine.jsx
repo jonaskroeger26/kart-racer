@@ -280,8 +280,12 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
   const initGame = useCallback(() => {
     if (!mountRef.current) return;
     const container = mountRef.current;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    let width = container.clientWidth;
+    let height = container.clientHeight;
+    if (!width || !height) {
+      width = window.innerWidth;
+      height = window.innerHeight;
+    }
 
     const diffSettings = {
       easy:   { aiSpeed: 0.55, aiVar: 0.08, speedMax: 120, accel: 2.2 },
@@ -750,5 +754,5 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     return ()=>{ window.removeEventListener('keydown',kd); window.removeEventListener('keyup',ku); };
   },[]);
 
-  return <div ref={mountRef} className="w-full h-full" style={{touchAction:'none'}} />;
+  return <div ref={mountRef} className="absolute inset-0 w-full h-full" style={{ touchAction: 'none' }} />;
 }
