@@ -559,7 +559,6 @@ export default function MainMenu({ onStart }) {
           </motion.div>
         )}
 
-      </AnimatePresence>
     </div>
   );
 }
