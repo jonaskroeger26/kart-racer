@@ -361,6 +361,10 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     gantryBeam.lookAt(gantryBeam.position.x+startTang.x, gantryBeam.position.y, gantryBeam.position.z+startTang.z);
     scene.add(gantryBeam);
 
+    // F1-style staggered grid constants (used for boxes and AI)
+    const GRID_LATERAL = 5;       // meters each side of center (P1 left = -5, P2 right = +5)
+    const gridTrackTOffset = 0.0006;
+
     // Checkerboard start line painted flat on road surface
     for (let c = 0; c < 14; c++) {
       for (let r = 0; r < 3; r++) {
