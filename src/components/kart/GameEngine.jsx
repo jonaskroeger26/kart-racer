@@ -857,7 +857,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
           const seatMat = new THREE.MeshPhongMaterial({ color: seatColors[(row + col) % seatColors.length] });
           const seat = new THREE.Mesh(seatGeo, seatMat);
           const seatPos = startPos.clone()
-            .add(startRight.clone().multiplyScalar(side * (TRACK_WIDTH / 2 + RUNOFF + 5 + row * 1.6)))
+            .add(startRight.clone().multiplyScalar(side * (TRACK_WIDTH / 2 + CURB_W + 6 + row * 1.6)))
             .add(startTang.clone().multiplyScalar((col - 6.5) * 2.1));
           seatPos.y += row * 1.1 + 0.5;
           seat.position.copy(seatPos);
