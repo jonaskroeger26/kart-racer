@@ -297,14 +297,9 @@ export default function MainMenu({ onStart }) {
 
         {/* ═══════════════ MAIN SCREEN ═══════════════ */}
         {screen === 'main' && (
-          <div
-            className="relative h-full flex flex-col items-center justify-center"
-          >
+          <div className="relative h-full flex flex-col items-center justify-center">
             {/* Hero title */}
-            <div
-              style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
-              className="text-center mb-12 select-none"
-            >
+            <div className="text-center mb-12 select-none">
               <div
                 className="text-[80px] md:text-[130px] font-black leading-none tracking-tighter"
                 style={{
@@ -328,28 +323,15 @@ export default function MainMenu({ onStart }) {
               >
                 KART
               </div>
-              {/*               Subtitle */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="mt-4 text-white/30 text-xs md:text-sm tracking-[6px] font-medium uppercase"
-              >
+              <div className="mt-4 text-white/30 text-xs md:text-sm tracking-[6px] font-medium uppercase">
                 ── F1 Grand Prix ──
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
 
             {/* Buttons */}
-            <motion.div
-              initial={{ y: 60, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ type: 'spring', damping: 18, delay: 0.2 }}
-              className="flex flex-col items-center gap-3 w-full max-w-xs px-6"
-            >
+            <div className="flex flex-col items-center gap-3 w-full max-w-xs px-6">
               {/* RACE NOW */}
-              <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
+              <button
                 onClick={() => setScreen('select')}
                 className="relative w-full overflow-hidden rounded-2xl"
                 style={{ padding: '1px', background: 'linear-gradient(135deg, #f59e0b, #ef4444, #8b5cf6)' }}
@@ -357,33 +339,27 @@ export default function MainMenu({ onStart }) {
                 <div className="relative rounded-2xl bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 px-8 py-4 flex items-center justify-center gap-3">
                   <span className="text-xl">🏁</span>
                   <span className="font-black text-xl text-white tracking-widest">RACE NOW</span>
-                  <motion.div
-                    className="absolute inset-0 bg-white/0 hover:bg-white/10 transition-colors rounded-2xl"
-                    whileHover={{ opacity: 1 }}
-                  />
                 </div>
-              </motion.button>
+              </button>
 
               <div className="grid grid-cols-2 gap-2 w-full">
                 {[
                   { label: 'F1 CAR', sub: kart.name, icon: '🏁', action: () => setScreen('select') },
                   { label: 'DIFFICULTY', sub: diff.label, icon: diff.icon, action: () => setScreen('difficulty') },
                 ].map((b, i) => (
-                  <motion.button
+                  <button
                     key={i}
-                    whileHover={{ scale: 1.03, y: -1 }}
-                    whileTap={{ scale: 0.97 }}
                     onClick={b.action}
-                    className="relative overflow-hidden rounded-xl border border-white/8 bg-white/4 backdrop-blur-xl px-4 py-3 text-left transition-all"
-                    style={{ background: 'rgba(255,255,255,0.04)' }}
+                    className="relative overflow-hidden rounded-xl px-4 py-3 text-left"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
                   >
                     <div className="text-lg mb-0.5">{b.icon}</div>
                     <div className="text-[10px] text-white/35 font-bold tracking-widest">{b.label}</div>
                     <div className="text-white font-black text-sm truncate">{b.sub}</div>
-                  </motion.button>
+                  </button>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
             {/* Controls */}
             <div className="absolute bottom-6 flex gap-6 text-white/20 text-xs tracking-widest font-medium">
