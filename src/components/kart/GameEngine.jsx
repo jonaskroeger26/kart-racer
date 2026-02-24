@@ -14,43 +14,27 @@ const PIT_ZONE_T_START = 0.96;
 const PIT_ZONE_T_END = 0.04;
 const PIT_STOP_DURATION_SEC = 2.5;
 
-// Nürburgring Nordschleife–style: long lap, elevation, twisty sections, Karussell-style bend
+// Single non-crossing loop: one continuous lap, no overlapping segments.
+// Main straight is only traversed once (south). Return approaches start from the side so track never crosses.
 function createTrackPath() {
   const pts = [
-    // Start/Finish straight (Döttinger Höhe style)
-    [0, 0, 0], [0, 0, -25], [0, 0, -55], [0, 0, -90], [0, 0, -125], [0, 0, -160],
-    // Tiergarten / turn into twisty section
-    [18, 0.5, -185], [50, 1, -200], [95, 1.5, -208], [140, 2, -205], [180, 1.5, -188],
-    // Hatzenbach (twisty esses)
-    [210, 1, -158], [228, 0.5, -118], [235, 0, -75], [228, -0.3, -35], [212, -0.5, 5],
-    [188, -0.3, 38], [158, 0, 62], [122, 0.5, 78], [82, 0.8, 85],
-    // Hocheichen / Quiddelbacher Höhe (long curve, slight elevation)
-    [40, 1.2, 82], [0, 1.5, 78], [-42, 1.2, 82], [-85, 0.6, 88], [-125, 0, 85],
-    // Flugplatz (crest – bump)
-    [-162, -0.5, 72], [-195, -1, 52], [-218, -1.2, 25], [-232, -0.8, -8], [-235, -0.3, -42],
-    // Aremberg / Adenauer Forst (winding)
-    [-222, 0.2, -75], [-198, 0.5, -102], [-165, 0.6, -120], [-125, 0.5, -130], [-82, 0.3, -132],
-    [-40, 0, -128], [0, -0.2, -118], [38, -0.3, -102], [72, -0.2, -82], [98, 0, -58],
-    // Karussell-style banked curve (long right)
-    [112, 0.3, -30], [118, 0.5, 5], [108, 0.5, 38], [88, 0.3, 65], [58, 0, 82],
-    [22, -0.2, 88], [-18, -0.2, 85], [-58, 0, 75], [-95, 0.3, 58], [-128, 0.5, 35],
-    [-152, 0.5, 5], [-168, 0.3, -28], [-175, 0, -62], [-172, -0.2, -95],
-    // Pflanzgarten / Schwedenkreuz (twisty return)
-    [-158, -0.3, -122], [-132, -0.2, -142], [-98, 0, -155], [-58, 0.2, -162], [-22, 0.2, -162],
-    [15, 0.1, -155], [48, 0, -142], [72, -0.1, -122], [88, -0.2, -98], [92, -0.2, -72],
-    // Return to main straight
-    [88, -0.1, -48], [75, 0, -28], [55, 0, -12], [28, 0, -5], [0, 0, 0],
+    // Start/Finish straight — south only (never run north along this line)
+    [0, 0, 0], [0, 0, -45], [0, 0, -100], [0, 0, -155], [0, 0, -210],
+    // Turn 1 (right): bottom — curve east
+    [50, 0.2, -238], [120, 0.3, -245], [190, 0.3, -235], [250, 0.2, -210],
+    // Back straight — east
+    [278, 0, -165], [288, 0, -105], [290, 0, -45], [285, 0, 15], [272, 0, 70],
+    // Turn 2 (right): far side — curve north
+    [248, 0.3, 118], [200, 0.4, 158], [142, 0.4, 182], [78, 0.3, 188], [15, 0.2, 178],
+    // North straight — west
+    [-42, 0, 152], [-92, 0, 112], [-125, 0, 62], [-138, 0, 8], [-132, 0, -45], [-112, 0, -92],
+    // Turn 3 (right): curve west then south; all points left of main straight (x <= 0) so track never crosses
+    [-88, 0.2, -132], [-55, 0.2, -162], [-38, 0.2, -182], [-22, 0.15, -196], [-30, 0, -198],
+    // Turn 4: stay on left (x <= 0), curve around to (0,0,0) from the left — no second run on main straight
+    [-48, 0, -192], [-62, 0, -172], [-68, 0, -145], [-62, 0, -112], [-50, 0, -78], [-35, 0, -45], [-18, 0, -18], [0, 0, 0],
   ];
 
-  // Validate no obviously bad duplicates
-  const unique = [];
-  for (let i = 0; i < pts.length; i++) {
-    const [x,,z] = pts[i];
-    const prev = unique[unique.length - 1];
-    if (!prev || Math.abs(prev[0]-x) > 1 || Math.abs(prev[2]-z) > 1) unique.push(pts[i]);
-  }
-
-  return new THREE.CatmullRomCurve3(unique.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.4);
+  return new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.4);
 }
 
 function createF1Car(color) {
