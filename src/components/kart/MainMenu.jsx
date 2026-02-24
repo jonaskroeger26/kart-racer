@@ -299,7 +299,7 @@ export default function MainMenu({ onStart }) {
         {screen === 'main' && (
           <motion.div
             key="main"
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
