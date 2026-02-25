@@ -1027,9 +1027,12 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       all.sort((a, b) => b.progress - a.progress);
       ps.position = all.findIndex(r => r.isPlayer) + 1;
 
-      const camBack = pDir.clone().multiplyScalar(-5.5); camBack.y = 3.2;
-      camera.position.lerp(playerCarRef.current.position.clone().add(camBack), 0.12);
-      camera.lookAt(playerCarRef.current.position.clone().setY(playerCarRef.current.position.y + 1.0));
+      const droneOffset = pDir.clone().multiplyScalar(-4);
+      droneOffset.y = 11;
+      camera.position.lerp(playerCarRef.current.position.clone().add(droneOffset), 0.14);
+      const lookTarget = playerCarRef.current.position.clone().add(pDir.clone().multiplyScalar(2));
+      lookTarget.y += 0.5;
+      camera.lookAt(lookTarget);
 
       const preGreenElapsed = (Date.now() - startTime) / 1000;
       const redLightsOn = !raceStarted ? (preGreenElapsed >= 5 ? 5 : Math.min(5, Math.floor(preGreenElapsed) + 1)) : 0;
