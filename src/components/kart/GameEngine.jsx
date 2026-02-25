@@ -259,8 +259,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     const physics = kartPhysics[kartType] || kartPhysics.balanced;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb);
-    scene.fog = new THREE.Fog(0xb0d8f0, 800, 3500);
+    // Cinematic, darker sky and fog so the car and track materials pop more
+    scene.background = new THREE.Color(0x05070b);
+    scene.fog = new THREE.Fog(0x0d1118, 650, 3200);
 
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
 
@@ -270,7 +271,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.15;
     container.appendChild(renderer.domElement);
 
     const applySize = () => {
@@ -284,24 +285,29 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     requestAnimationFrame(applySize);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-    const sun = new THREE.DirectionalLight(0xfff8e8, 2.2);
-    sun.position.set(120, 220, 80);
+    // More grounded, F1-style lighting: softer ambient, warm sun, cool fill
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    const sun = new THREE.DirectionalLight(0xfff0cf, 1.9);
+    sun.position.set(140, 230, 90);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.left = -2000; sun.shadow.camera.right = 2000;
     sun.shadow.camera.top = 2000; sun.shadow.camera.bottom = -2000;
-    sun.shadow.camera.far = 3500; sun.shadow.bias = -0.0003;
+    sun.shadow.camera.far = 3500; sun.shadow.bias = -0.00035;
     scene.add(sun);
-    scene.add(new THREE.DirectionalLight(0xc8e0ff, 0.7).position.set(-80, 60, -60) && new THREE.DirectionalLight(0xc8e0ff, 0.7));
-    scene.add(new THREE.HemisphereLight(0x87ceeb, 0x4a8c2a, 0.5));
+
+    const fill = new THREE.DirectionalLight(0x9fb8ff, 0.45);
+    fill.position.set(-160, 180, -120);
+    scene.add(fill);
+
+    scene.add(new THREE.HemisphereLight(0x3a4b6d, 0x162414, 0.4));
 
     const trackCurve = createTrackPath();
     const trackPoints = trackCurve.getPoints(2400);
 
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(12000, 12000),
-      new THREE.MeshStandardMaterial({ color: 0x2d5a1e, roughness: 0.95, metalness: 0 })
+      new THREE.MeshStandardMaterial({ color: 0x21391f, roughness: 0.97, metalness: 0 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.08;
@@ -309,13 +315,25 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     scene.add(ground);
 
     const ASPHALT_Y = 0.12;
-    const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9, metalness: 0.03, side: THREE.DoubleSide });
-    const curbRedMat  = new THREE.MeshStandardMaterial({ color: 0xdd1111, roughness: 0.5, metalness: 0 });
-    const curbWhtMat  = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0 });
-    const grassMat    = new THREE.MeshStandardMaterial({ color: 0x2a6b1a, roughness: 0.95, metalness: 0 });
-    const whiteMat    = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0, emissive: 0xffffff, emissiveIntensity: 0.1 });
+    const asphaltMat = new THREE.MeshStandardMaterial({
+      color: 0x111216,
+      roughness: 0.88,
+      metalness: 0.18,
+      side: THREE.DoubleSide
+    });
+    const rubberMat  = new THREE.MeshStandardMaterial({
+      color: 0x050608,
+      roughness: 0.7,
+      metalness: 0.25,
+      transparent: true,
+      opacity: 0.9
+    });
+    const curbRedMat  = new THREE.MeshStandardMaterial({ color: 0xc81616, roughness: 0.55, metalness: 0.05 });
+    const curbWhtMat  = new THREE.MeshStandardMaterial({ color: 0xf7f7f7, roughness: 0.6, metalness: 0.02 });
+    const grassMat    = new THREE.MeshStandardMaterial({ color: 0x1b4b16, roughness: 0.98, metalness: 0 });
+    const whiteMat    = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.35, metalness: 0.02, emissive: 0xffffff, emissiveIntensity: 0.06 });
 
-    const aV=[], aI=[], crV=[], crI=[], cwV=[], cwI=[], gV=[], gI=[], wV=[], wI=[];
+    const aV=[], aI=[], crV=[], crI=[], cwV=[], cwI=[], gV=[], gI=[], wV=[], wI=[], rgV=[], rgI=[];
 
     function addQuad(vA, iA, p0, p1, p2, p3, yOff=0) {
       const b = vA.length / 3;
@@ -343,7 +361,16 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       const ln = next.clone().addScaledVector(nRight, -half);
       const rn = next.clone().addScaledVector(nRight,  half);
 
+      // main asphalt ribbon
       addQuad(aV, aI, lc, rc, ln, rn, ASPHALT_Y);
+
+      // subtle rubbered racing line around the center of the track
+      const grooveW = 1.8;
+      const lcR = curr.clone().addScaledVector(right, -grooveW);
+      const rcR = curr.clone().addScaledVector(right,  grooveW);
+      const lnR = next.clone().addScaledVector(nRight, -grooveW);
+      const rnR = next.clone().addScaledVector(nRight,  grooveW);
+      addQuad(rgV, rgI, lcR, rcR, lnR, rnR, ASPHALT_Y + 0.001);
 
       const lwlc = curr.clone().addScaledVector(right, -half);
       const lwrc = curr.clone().addScaledVector(right, -(half - WLINE));
@@ -395,14 +422,15 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     }
 
     scene.add(buildMesh(aV, aI, asphaltMat, 1));
+    scene.add(buildMesh(rgV, rgI, rubberMat, 1));
     scene.add(buildMesh(crV, crI, curbRedMat, 1));
     scene.add(buildMesh(cwV, cwI, curbWhtMat, 1));
     scene.add(buildMesh(gV,  gI,  grassMat, 0));
     scene.add(buildMesh(wV,  wI,  whiteMat, 2));
 
     // ── METAL FENCE BARRIERS ──
-    const fencePostMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, metalness: 0.85, roughness: 0.35 });
-    const fenceRailMat = new THREE.MeshStandardMaterial({ color: 0x5c5c5c, metalness: 0.8, roughness: 0.4 });
+    const fencePostMat = new THREE.MeshStandardMaterial({ color: 0x20242c, metalness: 0.9, roughness: 0.3 });
+    const fenceRailMat = new THREE.MeshStandardMaterial({ color: 0x3b4858, metalness: 1.0, roughness: 0.25 });
     const fenceOffset = half + CURB + GRASS_W - 1;
     const fencePostHeight = 1.4;
     const railCount = 3;
