@@ -1027,9 +1027,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
       all.sort((a, b) => b.progress - a.progress);
       ps.position = all.findIndex(r => r.isPlayer) + 1;
 
-      const camBack = pDir.clone().multiplyScalar(-10); camBack.y=5.5;
-      camera.position.lerp(playerCarRef.current.position.clone().add(camBack),0.09);
-      camera.lookAt(playerCarRef.current.position.clone().setY(playerCarRef.current.position.y+1.2));
+      const camBack = pDir.clone().multiplyScalar(-5.5); camBack.y = 3.2;
+      camera.position.lerp(playerCarRef.current.position.clone().add(camBack), 0.12);
+      camera.lookAt(playerCarRef.current.position.clone().setY(playerCarRef.current.position.y + 1.0));
 
       const preGreenElapsed = (Date.now() - startTime) / 1000;
       const redLightsOn = !raceStarted ? (preGreenElapsed >= 5 ? 5 : Math.min(5, Math.floor(preGreenElapsed) + 1)) : 0;
