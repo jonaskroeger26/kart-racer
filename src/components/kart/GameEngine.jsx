@@ -19,19 +19,25 @@ const PIT_STOP_DURATION_SEC = 2.5;
 const GRID_LATERAL = 5;
 const gridTrackTOffset = 0.0012;
 
+// F1-style circuit: main straight, turn 1–2, side straight, turn 3–4, back straight, turn 5–6, close
 function createTrackPath() {
-  const a = 2800;
-  const b = 2000;
-  const n = 96;
-  const pts = [];
-  for (let i = 0; i < n; i++) {
-    const t = (i / n) * Math.PI * 2 - Math.PI / 2;
-    const x = a * Math.cos(t);
-    const z = b * Math.sin(t);
-    const y = 0.12 * Math.sin(t * 2);
-    pts.push(new THREE.Vector3(x, y, z));
-  }
-  return new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.3);
+  const pts = [
+    new THREE.Vector3(0, 0, -2200),
+    new THREE.Vector3(0, 0.08, -1100),
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0, 0.08, 1100),
+    new THREE.Vector3(0, 0, 2200),
+    new THREE.Vector3(520, 0.06, 2380),
+    new THREE.Vector3(1180, 0.04, 2180),
+    new THREE.Vector3(1880, 0.02, 1680),
+    new THREE.Vector3(2180, 0, 880),
+    new THREE.Vector3(2280, 0, 0),
+    new THREE.Vector3(2180, 0, -880),
+    new THREE.Vector3(1880, 0.02, -1680),
+    new THREE.Vector3(1180, 0.04, -2180),
+    new THREE.Vector3(520, 0.06, -2380),
+  ];
+  return new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.25);
 }
 
 // Project world position onto track; returns { normT, lateralOffset } for collision resolution
@@ -135,9 +141,17 @@ function createGameSounds() {
       setTimeout(() => playBeep(1100, 0.2), 80);
     },
     engine(speedNorm) {
-      if (!engineOsc || !engineGain) return;
-      engineGain.gain.linearRampToValueAtTime(0.02 + speedNorm * 0.06, ctx.currentTime + 0.05);
-      engineOsc.frequency.linearRampToValueAtTime(55 + speedNorm * 120, ctx.currentTime + 0.05);
+      if (!engineOsc || !engineGain || !ctx) return;
+      const t = ctx.currentTime + 0.06;
+      if (speedNorm < 0.03) {
+        engineGain.gain.linearRampToValueAtTime(0, t);
+        engineOsc.frequency.linearRampToValueAtTime(48, t);
+      } else {
+        const vol = 0.008 + speedNorm * 0.07;
+        const freq = 50 + speedNorm * 125;
+        engineGain.gain.linearRampToValueAtTime(vol, t);
+        engineOsc.frequency.linearRampToValueAtTime(freq, t);
+      }
     },
     brake() {
       playNoise(0.08);
@@ -247,8 +261,8 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
-    const TRACK_SCALE = 0.00000028 * 3.5;
-    const LATERAL_SCALE = 550 * 0.0000028;
+    const TRACK_SCALE = 0.00000028 * 5.5;
+    const LATERAL_SCALE = 380 * 0.0000022;
 
     const kartPhysics = {
       speeder:  { thrust: 1.08, drag: 0.0000155, turn: 0.055, friction: 0.8, braking: 5.5, speedMax: diff.speedMax * 1.08 },
@@ -754,21 +768,18 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         const SPEED_MAX = physics.speedMax * boostMult * damageMult;
 
         if (keys['ArrowUp'] || keys['KeyW']) {
-          // Full throttle: accelerate smoothly up to SPEED_MAX, no drag fighting the input
           const thrust = physics.thrust * boostMult;
           ps.speed = Math.min(SPEED_MAX, ps.speed + thrust);
-          gameSounds.engine(ps.speed / physics.speedMax);
         } else if (keys['ArrowDown'] || keys['KeyS']) {
-          // Strong braking plus some drag
           const drag = physics.drag * ps.speed * ps.speed;
           ps.speed = Math.max(0, ps.speed - physics.braking - drag * 0.4);
           if (frame % 8 === 0) gameSounds.brake();
         } else {
-          // Coasting: gentle slowdown from engine braking + drag
           const engineBraking = 0.9;
           const drag = physics.drag * ps.speed * ps.speed * 0.6;
           ps.speed = Math.max(0, ps.speed - engineBraking - drag);
         }
+        gameSounds.engine(ps.speed / physics.speedMax);
 
         const si = (keys['ArrowLeft']||keys['KeyA']) ? 1 : (keys['ArrowRight']||keys['KeyD']) ? -1 : 0;
         const speedNorm = Math.min(1, ps.speed / physics.speedMax);
@@ -786,9 +797,9 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
         const MAX_HEADING = 0.38;
         ps.heading = Math.max(-MAX_HEADING, Math.min(MAX_HEADING, ps.heading));
 
-        const lateralScale = LATERAL_SCALE * (0.7 + 0.3 * (1 - speedNorm));
+        const lateralScale = LATERAL_SCALE * (0.75 + 0.25 * (1 - speedNorm));
         const wantedLateralVel = -ps.speed * Math.sin(ps.heading) * lateralScale;
-        const grip = 0.14 + speedNorm * 0.08;
+        const grip = 0.42 + speedNorm * 0.12;
         ps.lateralVel += (wantedLateralVel - ps.lateralVel) * grip;
 
         ps.lastT = ps.trackT;
@@ -1022,7 +1033,6 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
 
       const preGreenElapsed = (Date.now() - startTime) / 1000;
       const redLightsOn = !raceStarted ? (preGreenElapsed >= 5 ? 5 : Math.min(5, Math.floor(preGreenElapsed) + 1)) : 0;
-      if (!raceStarted && redLightsOn > 0) gameSounds.redLight(redLightsOn);
       if (!raceStarted && redLightsOn > 0) gameSounds.redLight(redLightsOn);
 
       if (onGameState) {
