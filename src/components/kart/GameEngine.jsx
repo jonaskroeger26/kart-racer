@@ -261,7 +261,7 @@ export default function GameEngine({ onGameState, kartColor, kartType, difficult
     };
     const diff = diffSettings[difficulty] || diffSettings.medium;
 
-    const TRACK_SCALE = 0.00000028 * 5.5;
+    const TRACK_SCALE = 0.00000028 * 52;
     const LATERAL_SCALE = 380 * 0.0000022;
 
     const kartPhysics = {
